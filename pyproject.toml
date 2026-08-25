@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "topiclayers"
-version = "0.1.0"
+version = "0.2.0"
 description = "From any collection of posts to topical multilayer networks — hardened and social-scientist-friendly"
 authors = ["alessiogandelli <alessiogandelli99@gmail.com>"]
 readme = "README.md"
@@ -38,6 +38,11 @@ labeling = ["litellm"]
 pytest = ">=8.0"
 pytest-cov = ">=6.0"
 jupyter = "^1.0.0"
+
+[tool.poetry.urls]
+Repository = "https://github.com/alessiogandelli/topiclayers"
+Issues = "https://github.com/alessiogandelli/topiclayers/issues"
+Changelog = "https://github.com/alessiogandelli/topiclayers/blob/main/CHANGELOG.md"
 
 [tool.poetry.scripts]
 topiclayers = "topiclayers.cli:main"

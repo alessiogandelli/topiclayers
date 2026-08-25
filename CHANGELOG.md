@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-25
+
 ### Added
 - LLM topic labeling: after clustering, an LLM writes one short label per topic. Default is local Ollama (`ollama/qwen2.5:7b`); any LiteLLM model string works (OpenAI, Anthropic, ...). Configurable via `topic_model.label_model` in YAML (set to `""` to disable). Requires the optional `labeling` extra (`pip install 'topiclayers[labeling]'`). Non-fatal: if the server is unreachable, keyword labels are kept.
 - Batched labeling: topics are labeled ~40 per LLM call instead of one call each (~40x fewer requests). The prompt carries dataset-level context (`topic_model.label_context`, auto-derived for cop* names) so labels describe the specific subtopic within the general domain rather than the domain itself. `max_topics` parameter allows a cheap preview on the largest topics.

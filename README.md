@@ -6,7 +6,7 @@
 
 ```bash
 # Requires Python 3.12
-pip install -e .
+pip install topiclayers
 topiclayers run examples/generic.yml
 ```
 
