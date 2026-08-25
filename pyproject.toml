@@ -10,30 +10,30 @@ keywords = ["topic-modeling", "network-analysis", "social-science", "polarisatio
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.12,<3.14"
 jsonlines = "^4.0.0"
-pandas = "^2.0"
-numpy = "^1.24"
-sentence-transformers = "^2.6.1"
-bertopic = "^0.16.0"
-umap-learn = "^0.5.6"
-hdbscan = "^0.8.33"
-networkx = "^3.3"
-igraph = "^0.11.4"
+pandas = ">=2.2,<4"
+numpy = ">=1.26,<3"
+sentence-transformers = "^6.0.0"
+bertopic = "^0.17.4"
+scikit-learn = ">=1.5"
+umap-learn = "^0.5.12"
+networkx = "^3.6"
+igraph = ">=0.11.4"
 uunet = "^2.1.1"
-qdrant-client = "^1.8.2"
-openai = "^1.17.0"
+qdrant-client = "^1.19.0"
+openai = "^3.0.0"
 python-dotenv = "^1.0.1"
 pyyaml = "^6.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.0"
-pytest-cov = "^4.0"
+pytest = ">=8.0"
+pytest-cov = ">=6.0"
 jupyter = "^1.0.0"
 
 [tool.poetry.scripts]

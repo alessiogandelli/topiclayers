@@ -47,7 +47,9 @@ class TopicModeler:
         reporter=None,
         exact_probabilities: bool = False,
         repro_mode: str = "strict",
-        umap_init: str = "spectral",
+        # "pca" (seeded) is deterministic AND ~20x faster than "spectral";
+        # pass umap_init="spectral" explicitly to restore the old behaviour
+        umap_init: str = "pca",
     ) -> pd.DataFrame:
         from topiclayers.support.repro import set_global_seed
 
@@ -210,12 +212,12 @@ class TopicModeler:
         reporter=None,
         exact_probabilities: bool = False,
         repro_mode: str = "strict",
-        umap_init: str = "spectral",
+        umap_init: str = "pca",
     ) -> None:
         import random
 
         from umap import UMAP
-        from hdbscan import HDBSCAN
+        from sklearn.cluster import HDBSCAN
         from sklearn.feature_extraction.text import CountVectorizer
         from bertopic import BERTopic
         from bertopic.vectorizers import ClassTfidfTransformer
@@ -254,30 +256,29 @@ class TopicModeler:
             n_components = min(5, len(docs) - 1)
             if n_components + 1 >= len(docs):
                 n_components = max(1, len(docs) - 3)
-            umap_kwargs = {}
+            umap_params = {
+                "n_components": n_components,
+                "n_neighbors": n_neighbors,
+                "min_dist": 0.0,
+                "metric": "cosine",
+                "init": umap_init,
+            }
             if fast:
                 # a seeded UMAP forces single-threaded execution; fast mode
                 # trades reproducibility for parallelism
-                umap_kwargs = {"random_state": None, "n_jobs": -1}
-            umap_model = UMAP(
-                n_components=n_components,
-                n_neighbors=n_neighbors,
-                min_dist=0.0,
-                metric="cosine",
-                random_state=None if fast else random_state,
-                init=umap_init,
-                **umap_kwargs,
-            )
+                umap_params.update({"random_state": None, "n_jobs": -1})
+            else:
+                umap_params["random_state"] = random_state
+            umap_model = UMAP(**umap_params)
         else:
             fast = False
 
         if hdbscan_model is None:
             min_cluster_size = max(2, min_topic_size)
-            hdbscan_kwargs = {"core_dist_n_jobs": -1} if fast else {}
+            hdbscan_kwargs = {"n_jobs": -1} if fast else {}
             hdbscan_model = HDBSCAN(
                 min_samples=max(1, min_topic_size // 5),
                 min_cluster_size=min_cluster_size,
-                prediction_data=True,
                 **hdbscan_kwargs,
             )
 

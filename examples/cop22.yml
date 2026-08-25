@@ -1,0 +1,17 @@
+input:
+  format: twitter_jsonl
+  # paths are resolved relative to this config file's directory
+  posts: ../data/cop22.json
+
+name: cop22
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 50
+  repro_mode: fast
+
+network:
+  type: multilayer_repost
+  project_ttn: true
+
+output_dir: ./out/cop22

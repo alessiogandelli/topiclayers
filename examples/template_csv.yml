@@ -1,0 +1,42 @@
+# ============================================================
+# TEMPLATE — Generic CSV/Parquet posts (any platform)
+# Copy this file, rename it, adjust the values below.
+# Run:  topiclayers run examples/<your_config>.yml
+# Paths in `input` are resolved relative to THIS file's directory.
+# ============================================================
+
+input:
+  format: csv_posts              # or parquet_posts
+  posts: generic/posts.csv       # required columns: post_id, user_id, text
+                                 # optional columns: created_at, lang,
+                                 # interaction_type ("original"|"repost"|"quote"|"reply"),
+                                 # target_post_id, mentions (semicolon-separated),
+                                 # any extra_* column is carried through as metadata
+  # users: path/to/users.csv     # optional user metadata file
+
+name: my_dataset                 # prefixes outputs and cache keys; changing it starts
+                                 # a fresh cache
+
+topic_model:
+  embedder: all-MiniLM-L6-v2     # sentence-transformers model, or OpenAI
+                                 # "text-embedding-3-small"/"-large" (needs
+                                 # OPENAI_API_KEY in .env)
+  min_topic_size: 10             # small datasets need small values; start low and raise
+                                 # until topics look coherent
+  nr_topics: auto                # "auto", or an int to force reduction after fit
+  random_state: 42
+  umap_n_neighbors: 15
+  umap_n_components: 5
+  exact_probabilities: false     # true = full membership matrix (slow on big corpora)
+  repro_mode: fast               # "fast" = parallel, non-reproducible;
+                                 # "strict" = seeded single-threaded, bit-reproducible
+  umap_init: pca                 # default; ~20x faster than spectral, deterministic
+                                 # when seeded (docs/UMAP_INIT_BENCHMARK.md)
+
+network:
+  type: retweet                  # for CSV data usually "retweet" (or "multilayer_repost"
+                                 # / "ttn" / "all"); requires target_post_id +
+                                 # interaction_type=repost rows to build edges
+  project_ttn: true
+
+output_dir: ./out/my_dataset

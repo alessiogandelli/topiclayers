@@ -36,3 +36,15 @@ def test_normal_run_produces_topics():
         topics = result["topic"].unique()
         assert len(topics) > 0
         assert "topic" in result.columns
+
+
+def test_fast_mode_produces_topics():
+    from topiclayers.core.topic import TopicModeler
+
+    df = pd.DataFrame({"text": ["hello world", "hello there", "world today", "python code", "python test", "java code", "java test"]})
+    with tempfile.TemporaryDirectory() as d:
+        tm = TopicModeler(df, embedder_name="all-MiniLM-L6-v2", path_cache=Path(d), name="test")
+        result = tm.get_topics(min_topic_size=2, random_state=42, repro_mode="fast")
+        topics = result["topic"].unique()
+        assert len(topics) > 0
+        assert "topic" in result.columns

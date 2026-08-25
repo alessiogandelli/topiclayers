@@ -75,7 +75,7 @@ class RunManifest:
 def _gather_versions() -> dict:
     deps = [
         "numpy", "pandas", "networkx", "scipy",
-        "bertopic", "umap", "hdbscan", "sentence_transformers",
+        "bertopic", "umap", "sklearn", "sentence_transformers",
         "openai", "qdrant_client",
     ]
     versions: dict = {}

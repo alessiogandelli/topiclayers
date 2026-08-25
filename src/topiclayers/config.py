@@ -24,9 +24,9 @@ class TopicModelConfig:
     umap_n_components: int = 5
     exact_probabilities: bool = False
     repro_mode: str = "strict"
-    # "spectral" (UMAP default) is NOT reproducible across processes at scale;
-    # "random" is bit-reproducible given the seed
-    umap_init: str = "spectral"
+    # "pca" (seeded) is deterministic and ~20x faster than "spectral"
+    # with equal or better clustering quality; see docs/UMAP_INIT_BENCHMARK.md
+    umap_init: str = "pca"
 
 
 @dataclass
