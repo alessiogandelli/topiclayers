@@ -1,2 +1,0 @@
-pandas==2.2.2
-tweets_to_topic_network==0.1.3

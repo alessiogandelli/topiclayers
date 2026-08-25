@@ -135,3 +135,7 @@ models/
 qdrant_storage
 
 data/
+# topiclayers runtime artifacts
+out/
+runs/
+.qdrant_storage/

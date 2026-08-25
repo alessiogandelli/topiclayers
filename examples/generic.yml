@@ -1,0 +1,15 @@
+input:
+  format: csv_posts
+  # paths are resolved relative to this config file's directory
+  posts: generic/posts.csv
+
+name: generic_toy
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 2
+
+network:
+  type: multilayer_repost
+
+output_dir: ./out/generic_toy

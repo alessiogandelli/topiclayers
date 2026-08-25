@@ -1,6 +1,0 @@
-Bootstrap: localimage
-From: /apps/containers/Conda/miniconda-4.12.0.sif
-
-%post
-    conda install -y pandas
-    conda install -y tweets_to_topic_network
