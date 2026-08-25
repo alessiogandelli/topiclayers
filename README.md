@@ -5,7 +5,7 @@
 ## Quickstart
 
 ```bash
-# Requires Python 3.10–3.13
+# Requires Python 3.12
 pip install -e .
 topiclayers run examples/generic.yml
 ```
@@ -110,7 +110,7 @@ For a dataset named `<name>` (e.g. `my_dataset`), output goes to `<output_dir>/`
 
 ## Requirements
 
-- Python 3.10–3.13
+- Python 3.12 (uunet, used for multilayer networks, does not ship wheels for 3.13+ yet)
 - Optional: Docker (for Qdrant vector search), OpenAI API key (for OpenAI embeddings / topic labeling)
 
 ## Planned: JOSS software paper

@@ -4085,10 +4085,7 @@ files = [
 [package.dependencies]
 grpcio = ">=1.41.0"
 httpx = {version = ">=0.20.0", extras = ["http2"]}
-numpy = [
-    {version = ">=1.26", markers = "python_version == \"3.12\""},
-    {version = ">=2.1.0", markers = "python_version == \"3.13\""},
-]
+numpy = {version = ">=1.26", markers = "python_version == \"3.12\""}
 portalocker = ">=2.7.0,<4.0"
 protobuf = ">=3.20.0"
 pydantic = ">=1.10.8,<2.0.dev0 || >2.2.0"
@@ -5301,5 +5298,5 @@ files = [
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.12,<3.14"
-content-hash = "8af9b129ef4902048d9c1074dc2b1b7556b3e59ff33ef970ee1a393dd520fef7"
+python-versions = ">=3.12,<3.13"
+content-hash = "6dde78a8d3409f28866d7a9f95f80b0a3eaac857642124d229577203eba73b4c"

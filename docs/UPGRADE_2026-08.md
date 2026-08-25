@@ -50,9 +50,10 @@ qdrant-client = "^1.19.0"
 openai = "^3.0.0"
 ```
 
-- **Python `>=3.12,<3.14`**: numpy 2.5 requires Python >=3.12; networkx 3.6 requires
-  >=3.11. Upper bound kept at `<3.14` until numba/llvmlite officially support 3.14.
-  The venv was recreated on CPython 3.12.7.
+- **Python `>=3.12,<3.13`**: numpy 2.5 requires Python >=3.12; networkx 3.6 requires
+  >=3.11. Upper bound at `<3.13` because uunet 2.2.1 ships no cp313 wheels (its
+  CMake-based sdist build fails in practice). The venv was recreated on
+  CPython 3.12.7.
 - **numpy `>=1.26,<3` / pandas `>=2.2,<4`**: wide ranges instead of caret pins so
   poetry resolves the newest version compatible with the interpreter. On Python
   3.12 this resolves to numpy 2.5.2 and pandas 3.0.5.
