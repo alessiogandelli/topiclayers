@@ -1,0 +1,8 @@
+post_id,user_id,text,created_at,lang,interaction_type,target_post_id
+t1,a,tweet1,2022-01-01,en,original,
+t2,b,tweet2,2022-01-02,en,repost,t1
+t3,c,tweet3,2022-01-03,en,repost,t2
+t4,c,tweet4,2022-01-04,en,original,
+t5,a,tweet5,2022-01-05,en,repost,t7
+t6,d,tweet6,2022-01-06,en,repost,t7
+t7,d,tweet7,2022-01-07,en,original,

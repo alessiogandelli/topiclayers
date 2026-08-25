@@ -168,11 +168,36 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
     print(f"  Run manifest: {config.output_dir / 'run_manifest.json'}")
 
 
+def _cmd_init(dest: Path) -> None:
+    import shutil
+    from importlib.resources import as_file, files
+
+    if dest.exists():
+        print(f"Directory '{dest}' already exists — remove it or pass another path.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    with as_file(files("topiclayers") / "examples") as bundled:
+        shutil.copytree(bundled, dest)
+
+    print(f"Examples copied to {dest.resolve()}")
+    print("Try it:")
+    print(f"  topiclayers run {dest / 'generic.yml'}")
+
+
 def main() -> None:
-    if len(sys.argv) < 3 or sys.argv[1] not in ("run", "status"):
+    if len(sys.argv) < 2 or (
+        sys.argv[1] not in ("run", "status", "init")
+        or (sys.argv[1] != "init" and len(sys.argv) < 3)
+    ):
         print("Usage: topiclayers run <config.yaml>", file=sys.stderr)
         print("       topiclayers status <output_dir>", file=sys.stderr)
+        print("       topiclayers init [dest=./examples]", file=sys.stderr)
         sys.exit(1)
+
+    if sys.argv[1] == "init":
+        _cmd_init(Path(sys.argv[2]) if len(sys.argv) > 2 else Path("examples"))
+        return
 
     if sys.argv[1] == "status":
         from topiclayers.status import print_status

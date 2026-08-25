@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Bundled runnable examples: `topiclayers init` copies example configs and toy datasets (CSV + Twitter JSONL) into `./examples/`, so a fresh pip install works end-to-end out of the box.
+
+### Fixed
+- README quickstart referenced `examples/` that was not shipped with the package; troubleshooting entry suggested `pip install -e .` instead of installing from PyPI.
+
 ## [0.2.0] — 2026-08-25
 
 ### Added

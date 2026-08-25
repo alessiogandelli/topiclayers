@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "topiclayers"
-version = "0.2.0"
+version = "0.2.1"
 description = "From any collection of posts to topical multilayer networks — hardened and social-scientist-friendly"
 authors = ["alessiogandelli <alessiogandelli99@gmail.com>"]
 readme = "README.md"

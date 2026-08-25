@@ -7,6 +7,10 @@
 ```bash
 # Requires Python 3.12
 pip install topiclayers
+
+# copy runnable examples (configs + toy data) into ./examples/
+topiclayers init
+
 topiclayers run examples/generic.yml
 ```
 
@@ -125,7 +129,8 @@ CSV optional columns: `created_at`, `lang`, `interaction_type` (`original`/`repo
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
 | "All topics are -1" / "no topics found" | `min_topic_size` too high or dataset too small | Halve `min_topic_size` in config, or use a larger dataset (>100 posts) |
-| "Module not found" | topiclayers not installed | `pip install -e .` |
+| "Module not found" | topiclayers not installed | `pip install topiclayers` |
+| `topiclayers: command not found` | installed in a venv that isn't active | Activate the venv (`source .venv/bin/activate`) or use `python -m topiclayers.cli`; on install with `--user` add `~/.local/bin` to PATH |
 | "OpenAI API key not set" | Using OpenAI embedder without key | Switch `embedder` to `all-MiniLM-L6-v2` (default, works offline) |
 | "Qdrant connection refused" | Qdrant vector DB not running | Ignore — Qdrant is optional. Set `QDRANT_URL` in `.env` to enable |
 | "Cannot create multilayer network" | All posts are outliers | Reduce `min_topic_size` or provide more data |
