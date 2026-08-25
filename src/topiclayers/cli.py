@@ -50,6 +50,7 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
     print(f"  {len(posts)} posts loaded")
 
     row_counts = {"raw_posts": len(posts)}
+    tm = None
 
     cache_dir = config.output_dir / "cache"
 
@@ -98,6 +99,12 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
         print(f"  {len(topic_dist)} topics found (including -1 outlier)")
 
     status.stage("label")
+    if config.topic_model.label_model and tm is not None and tm.model is not None:
+        tm.label_topics(
+            model=config.topic_model.label_model,
+            api_base=config.topic_model.label_api_base,
+            label_context=config.topic_model.label_context,
+        )
     df_labeled = ds.update_df(df_labeled)
     ds._save_labeled_dataframe(cache_dir)
     row_counts["retweets_labeled"] = len(df_labeled)

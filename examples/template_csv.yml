@@ -32,6 +32,8 @@ topic_model:
                                  # "strict" = seeded single-threaded, bit-reproducible
   umap_init: pca                 # default; ~20x faster than spectral, deterministic
                                  # when seeded (docs/UMAP_INIT_BENCHMARK.md)
+  label_model: ollama/qwen2.5:7b # optional LLM topic labeling (LiteLLM string);
+                                 # "" disables. See template_twitter.yml for setup
 
 network:
   type: retweet                  # for CSV data usually "retweet" (or "multilayer_repost"

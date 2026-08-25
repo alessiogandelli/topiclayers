@@ -42,6 +42,32 @@ topic_model:
   umap_init: pca                 # default; deterministic when seeded and ~20x faster
                                  # than spectral (see docs/UMAP_INIT_BENCHMARK.md).
                                  # Pass "spectral" only if you specifically need it.
+  label_model: ollama/qwen2.5:7b # LLM that writes a short human-readable label per
+                                 # topic (any LiteLLM model string). Local & free
+                                 # via Ollama (https://ollama.com):
+                                 #   ollama serve && ollama pull qwen2.5:7b
+                                 # Cloud examples: "gpt-4o-mini",
+                                 # "anthropic/claude-3-haiku-20240307".
+                                 # Custom OpenAI-compatible server (Unsloth,
+                                 # llama.cpp, vLLM...): prefix with "openai/" and
+                                 # set label_api_base, e.g.
+                                 #   label_model: openai/unsloth/Qwen3.8-27B-GGUF
+                                 #   label_api_base: http://localhost:8888/v1
+                                 # Requires the labeling extra:
+                                 #   pip install 'topiclayers[labeling]'
+                                 # API key from LABEL_API_KEY / OPENAI_LIKE_API_KEY
+                                 # / OPENAI_API_KEY in .env. Set label_model to ""
+                                 # to disable; non-fatal if unreachable.
+  # label_context: ""            # optional context sentence ("all documents are ...");
+                                 # by default derived from `name` for cop* datasets.
+                                 # Helps the LLM label the specific SUBTOPIC instead
+                                 # of the general domain. Topics are labeled in
+                                 # batches (~40 per call); use a strong model for
+                                 # publishable labels (e.g. gpt-4o-mini, <1 min and
+                                 # cents for a full dataset)
+  label_api_base: ""             # base URL of a custom OpenAI-compatible endpoint;
+                                 # leave "" for Ollama/OpenAI. Can also be set via
+                                 # LABEL_API_BASE in .env
 
 network:
   type: multilayer_repost        # one of:

@@ -8,10 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- LLM topic labeling: after clustering, an LLM writes one short label per topic. Default is local Ollama (`ollama/qwen2.5:7b`); any LiteLLM model string works (OpenAI, Anthropic, ...). Configurable via `topic_model.label_model` in YAML (set to `""` to disable). Requires the optional `labeling` extra (`pip install 'topiclayers[labeling]'`). Non-fatal: if the server is unreachable, keyword labels are kept.
+- Batched labeling: topics are labeled ~40 per LLM call instead of one call each (~40x fewer requests). The prompt carries dataset-level context (`topic_model.label_context`, auto-derived for cop* names) so labels describe the specific subtopic within the general domain rather than the domain itself. `max_topics` parameter allows a cheap preview on the largest topics.
+- Custom OpenAI-compatible endpoints for labeling: `topic_model.label_api_base` (or `LABEL_API_BASE` env) targets self-hosted servers (Unsloth Studio, llama.cpp, vLLM...); API key resolved from `LABEL_API_KEY` -> `OPENAI_LIKE_API_KEY` -> `OPENAI_API_KEY`. On "No model loaded" errors the pipeline auto-resolves the local GGUF file and loads the model server-side, then retries.
 - Live run-status tracking: `run_status.json` written during each run with the current stage, per-item progress, elapsed time, and ETA. New `topiclayers status <output_dir>` command to inspect a running or finished run.
 - Historical ETA: per-stage durations recorded in `cache/stage_timings.json`, used to predict ETA for stages without a per-item counter (e.g. BERTopic).
 
 ### Changed
+- Stack upgraded to 2026 releases: bertopic 0.17.4, sentence-transformers 6, transformers 5, torch 2.13, numpy 2.5, pandas 3, openai 3, qdrant-client 1.19, uunet 2.2.1; Python 3.12. See docs/UPGRADE_2026-08.md.
+- HDBSCAN now comes from scikit-learn instead of the deprecated standalone package.
+- Fixed fast mode crashing with duplicate `random_state` kwarg passed to UMAP (fast mode had never run successfully).
+- UMAP init default changed from `spectral` to `pca`: seeded pca is bit-reproducible and ~20x faster with equal or better clustering quality (docs/UMAP_INIT_BENCHMARK.md).
 - Package reorganisation: pipeline stages moved to `topiclayers.core` (`data`, `topic`, `network`), small helpers to `topiclayers.support` (`cache`, `repro`). Public classes re-exported from `topiclayers.core`. No behavioural changes.
 - `TASKS.md` and `CONTRACT.md` moved to `docs/`.
 - SentenceTransformer embeddings now encode in explicit batches to report progress.

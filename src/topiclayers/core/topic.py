@@ -400,8 +400,307 @@ class TopicModeler:
                 save_embedding_model=self.embedder_name,
             )
 
-    def label_topics(self):
-        raise NotImplementedError("TODO: topic labeling via LLM")
+    def label_topics(
+        self,
+        model: str = "ollama/qwen2.5:7b",
+        n_representative_docs: int = 3,
+        overwrite: bool = False,
+        api_base: str = "",
+        batch_size: int = 40,
+        label_context: str = "",
+        max_topics: int = 0,
+    ) -> dict[int, str]:
+        """Label topics with an LLM, batching many topics per request.
+
+        Non-fatal by design: any failure (missing litellm, unreachable Ollama,
+        provider error) prints a warning and returns {} so the pipeline can
+        continue with the c-TF-IDF labels. Chunks whose request or JSON parse
+        fails keep their keyword labels; the rest are labeled.
+
+        Args:
+            model: LiteLLM model string, e.g. "ollama/qwen2.5:7b",
+                "gpt-4o-mini", "anthropic/claude-3-haiku-20240307". For a custom
+                OpenAI-compatible endpoint use "openai/<model-name>" together
+                with api_base.
+            n_representative_docs: docs per topic passed to the prompt.
+            overwrite: re-label even if labels were already generated.
+            api_base: base URL of an OpenAI-compatible endpoint (e.g.
+                "http://localhost:8888/v1"). API key resolution order:
+                LABEL_API_KEY -> OPENAI_LIKE_API_KEY -> OPENAI_API_KEY.
+            batch_size: topics per LLM call (~40 keeps prompts well within
+                small-context models while cutting request count ~40x).
+            label_context: dataset-level context sentence describing what all
+                documents have in common, so the LLM labels the *subtopic*
+                rather than the general domain. Derived from the dataset name
+                when it matches "cop<number>"; empty otherwise.
+            max_topics: label only the N largest topics (0 = all). Useful for
+                a cheap preview before running the full labeling.
+        """
+        import http.client
+        import json as _json
+        import socket
+
+        api_base = api_base or os.getenv("LABEL_API_BASE", "")
+
+        if self.model is None:
+            print("  No fitted topic model — skipping LLM labeling.")
+            return {}
+
+        topic_info = self.model.get_topic_info()
+        if "LLM_label" in topic_info.columns and not overwrite:
+            print("  LLM labels already present — skipping (use overwrite=True).")
+            return {}
+
+        try:
+            import litellm  # noqa: F401
+        except ImportError:
+            print(
+                "  LLM labeling skipped: 'litellm' is not installed.\n"
+                "    Install it with: pip install 'topiclayers[labeling]'\n"
+                "    Topics keep their c-TF-IDF keyword labels."
+            )
+            return {}
+
+        if model.startswith("ollama/"):
+            host = os.getenv("OLLAMA_HOST", "localhost")
+            port = int(os.getenv("OLLAMA_PORT", "11434"))
+            try:
+                conn = http.client.HTTPConnection(host, port, timeout=2)
+                conn.request("GET", "/api/tags")
+                conn.getresponse().read()
+                conn.close()
+            except (OSError, socket.timeout):
+                print(
+                    f"  LLM labeling skipped: Ollama not reachable at {host}:{port}.\n"
+                    f"    Start it with: ollama serve   (then pull the model:\n"
+                    f"    ollama pull {model.split('/', 1)[1]})\n"
+                    f"    Or point TOPIC_LLM to another model (e.g. gpt-4o-mini)."
+                )
+                return {}
+
+        generator_kwargs = {}
+        if api_base:
+            api_key = (
+                os.getenv("LABEL_API_KEY")
+                or os.getenv("OPENAI_LIKE_API_KEY")
+                or os.getenv("OPENAI_API_KEY")
+            )
+            if not api_key:
+                print(
+                    "  LLM labeling skipped: custom api_base set but no API key found.\n"
+                    "    Set LABEL_API_KEY (or OPENAI_LIKE_API_KEY / OPENAI_API_KEY) in .env."
+                )
+                return {}
+            generator_kwargs = {"api_base": api_base, "api_key": api_key}
+
+        context = label_context or _derive_label_context(self.name)
+
+        # collect per-topic prompt material from the fitted model
+        entries = []  # (topic_id, keywords_str, docs_str)
+        for _, row in topic_info.iterrows():
+            tid = int(row["Topic"])
+            if tid == -1:
+                continue
+            keywords = ", ".join(list(row["Representation"])[:8])
+            docs_list = row.get("Representative_Docs")
+            if isinstance(docs_list, str):
+                try:
+                    docs_list = eval(docs_list)
+                except Exception:
+                    docs_list = [docs_list]
+            if not isinstance(docs_list, list):
+                docs_list = []
+            docs_list = [str(d)[:280] for d in docs_list[:n_representative_docs]]
+            docs_str = "\n".join(f"  {i+1}. {d}" for i, d in enumerate(docs_list)) or "  (none)"
+            entries.append((tid, keywords, docs_str))
+
+        if not entries:
+            print("  No non-outlier topics to label.")
+            return {}
+
+        if max_topics and max_topics < len(entries):
+            entries = entries[:max_topics]  # topic_info is sorted by size
+            print(f"  Preview mode: labeling only the {max_topics} largest topics.")
+
+        system_msg = (
+            "You annotate discussion topics from social media.\n"
+            + (f"All documents are {context}.\n" if context else "")
+            + (
+                "For each numbered topic below, generate ONE concise label "
+                "(max 5 words) that describes the SPECIFIC subtopic being "
+                "discussed WITHIN this general domain — never the domain itself.\n"
+                "Labels like \"climate change\", \"environment\", \"social media "
+                "discussion\" are WRONG because they describe the domain, not the "
+                "specific subtopic.\n"
+                "Write each label in the dominant language of that topic's "
+                "documents.\n"
+                "Reply ONLY with a single JSON object mapping every topic id to "
+                'its label, e.g. {"0": "...", "7": "..."} — no other text.'
+            )
+        )
+
+        def call_chunk(chunk):
+            blocks = []
+            for tid, keywords, docs_str in chunk:
+                blocks.append(f"### Topic {tid}\nKeywords: {keywords}\nDocuments:\n{docs_str}")
+            user_msg = "\n\n".join(blocks)
+            resp = litellm.completion(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                **generator_kwargs,
+            )
+            text = resp.choices[0].message.content.strip()
+            # tolerate markdown fences around the JSON object
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            parsed = _json.loads(text)
+            return {int(k): str(v).strip() for k, v in parsed.items()}
+
+        llm_labels: dict[int, str] = {}
+        n_chunks = (len(entries) + batch_size - 1) // batch_size
+        failed = 0
+        for i in range(0, len(entries), batch_size):
+            chunk = entries[i : i + batch_size]
+            for attempt in (1, 2):
+                try:
+                    llm_labels.update(call_chunk(chunk))
+                    break
+                except Exception as e:
+                    # Unsloth Studio-style servers require an explicit model
+                    # load; resolve the local GGUF path and load once, then retry
+                    if api_base and "no model loaded" in str(e).lower():
+                        _load_openai_like_model(model, api_base, generator_kwargs.get("api_key", ""))
+                        continue
+                    if attempt == 1:
+                        print(f"  Batch {i // batch_size + 1}/{n_chunks}: {type(e).__name__}, retrying once.")
+                        continue
+                    failed += 1
+                    print(
+                        f"  Batch {i // batch_size + 1}/{n_chunks} failed (non-fatal): "
+                        f"{type(e).__name__}: {str(e)[:120]} — those topics keep keyword labels."
+                    )
+
+        if not llm_labels:
+            print("  No labels generated — topics keep their c-TF-IDF keyword labels.")
+            return {}
+
+        # expose labels as an aspect column named LLM_label in get_topic_info()
+        self.model.topic_aspects_["LLM_label"] = {
+            tid: [label] for tid, label in llm_labels.items()
+        }
+
+        info = self.model.get_topic_info()
+        labels = {}
+        for _, row in info.iterrows():
+            tid = int(row["Topic"])
+            name = row.get("LLM_label")
+            if name is None or (isinstance(name, float) and pd.isna(name)):
+                name = row["Name"]
+            if isinstance(name, (list, tuple)):
+                name = " ".join(str(x) for x in name)
+            labels[tid] = str(name)
+
+        self.topic_path.parent.mkdir(parents=True, exist_ok=True)
+        info.to_csv(self.topic_path)
+        ok = len(llm_labels)
+        suffix = f", {failed} batch(es) failed" if failed else ""
+        print(f"  Labeled {ok} topics with '{model}' in {n_chunks} batch(es){suffix}.")
+        return labels
+
+
+def _derive_label_context(name: str) -> str:
+    """Dataset-level context sentence for LLM labeling.
+
+    Recognizes COP dataset names (cop21, cop22, ...) and describes the shared
+    domain, so the model labels the specific subtopic instead of it.
+    """
+    import re
+
+    m = re.fullmatch(r"cop(\d+)", str(name).strip().lower())
+    if m:
+        return (
+            f"social media posts about climate change and the "
+            f"COP{m.group(1)} UN Climate Change Conference"
+        )
+    return ""
+
+
+def _find_gguf_file(model_dir: str) -> str | None:
+    """Find the main GGUF file under a model directory (largest one, skipping
+    mmproj/vision projections)."""
+    from pathlib import Path as _Path
+
+    candidates = [
+        p for p in _Path(model_dir).rglob("*.gguf")
+        if "mmproj" not in p.name.lower()
+    ]
+    if not candidates:
+        return None
+    return str(max(candidates, key=lambda p: p.stat().st_size))
+
+
+def _load_openai_like_model(model: str, api_base: str, api_key: str) -> bool:
+    """Try to load a model on an Unsloth Studio-style OpenAI-compatible server.
+
+    Returns True if the model appears loaded afterwards. Best-effort only:
+    any failure returns False (labeling stays non-fatal).
+    """
+    import json
+    import urllib.error
+    import urllib.request
+    from urllib.parse import urlparse
+
+    bare = model.split("/", 1)[1] if model.startswith("openai/") else model
+    root = api_base.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[: -len("/v1")]
+
+    def request(path: str, payload=None, timeout: int = 1800):
+        req = urllib.request.Request(
+            f"{root}{path}",
+            data=json.dumps(payload).encode() if payload is not None else None,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST" if payload is not None else "GET",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            body = r.read().decode()
+        return json.loads(body) if body.strip().startswith(("{", "[")) else body
+
+    try:
+        # locate the local model entry and its GGUF file
+        models = request("/api/models/local")
+        entry = next(
+            (
+                m for m in models.get("models", [])
+                if m.get("id") == bare or m.get("model_id") == bare
+            ),
+            None,
+        )
+        model_path = entry.get("path") if entry else None
+        gguf = _find_gguf_file(model_path) if model_path else None
+
+        load_payload = {"model": bare}
+        if gguf:
+            load_payload["model_path"] = gguf
+        elif not model_path:
+            print(f"  Model '{bare}' not found on the server — cannot auto-load.")
+            return False
+
+        print(f"  Loading model '{bare}' on the server...")
+        request("/v1/load", load_payload)
+        print(f"  Model '{bare}' loaded.")
+        return True
+    except Exception as e:
+        print(f"  Auto-load failed: {type(e).__name__}: {e}")
+        return False
 
 
 def _docs_hash(docs: list[str]) -> str:

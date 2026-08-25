@@ -116,6 +116,15 @@ Passing `umap_init="spectral"` explicitly restores the old behaviour.
 
 Version recording now reports `sklearn` instead of `hdbscan`.
 
+### 3.5 New: LLM topic labeling
+
+The previously stubbed `label_topics()` is now implemented on top of BERTopic 0.17's
+LiteLLM representation model. Default backend is a **local Ollama** model
+(`ollama/qwen2.5:7b`), configurable to any LiteLLM provider via
+`topic_model.label_model` in the YAML config. Runs as part of the `label`
+pipeline stage; failures (missing extra, unreachable server) are non-fatal and
+keep the c-TF-IDF keyword labels.
+
 ## 4. Validation
 
 - **Unit/integration tests**: 30 passed (including new `test_fast_mode_produces_topics`),

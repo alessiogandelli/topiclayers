@@ -17,7 +17,7 @@ That's it. You get a GML network file in `./out/generic_toy/networks/`.
 1. **Loads** your posts (Twitter JSONL, CSV, Parquet).
 2. **Cleans** text (removes URLs, @mentions, newlines).
 3. **Models topics** using BERTopic with SentenceTransformer embeddings.
-4. **Labels retweets** by propagating topic labels through retweet chains.
+4. **Labels topics** with an LLM (local via Ollama by default) and propagates topic labels through retweet chains.
 5. **Builds networks**: single-layer retweet, multilayer per-topic, and bipartite temporal-text networks.
 
 ## Minimal config
@@ -65,6 +65,51 @@ Total elapsed: 21m 05s
 
 Stages are `load → data → embed → topic_model → label → network → manifest`. Stages with a per-item counter (data, embed, network) report a live ETA. Opaque stages (BERTopic's UMAP+HDBSCAN) fall back to the median duration of past runs, stored in `<output_dir>/cache/stage_timings.json`.
 
+## Topic labeling with an LLM (optional)
+
+After clustering, the pipeline can ask a local LLM to write one short, readable
+label per topic (instead of raw keyword lists like `-1_proclamation_plante_trending`).
+Default is **Ollama** — free, local, nothing leaves your machine:
+
+```bash
+# one-time setup
+pip install 'topiclayers[labeling]'
+ollama pull qwen2.5:7b
+
+# start the server in another terminal
+ollama serve
+```
+
+Then just run the pipeline as usual (`label_model` is on by default). Any
+[LiteLLM](https://docs.litellm.ai/docs/providers) model string works:
+
+```yaml
+topic_model:
+  label_model: ollama/qwen2.5:7b      # default
+  # label_model: gpt-4o-mini          # OpenAI (needs OPENAI_API_KEY)
+  # label_model: anthropic/claude-3-haiku-20240307
+  # label_model: ""                   # disable labeling
+```
+
+### Custom / self-hosted OpenAI-compatible endpoints
+
+Any server speaking the OpenAI protocol (Unsloth, llama.cpp, vLLM, LM Studio...)
+works via `label_api_base`:
+
+```yaml
+topic_model:
+  label_model: openai/unsloth/Qwen3.8-27B-GGUF   # note the openai/ prefix
+  label_api_base: http://localhost:8888/v1
+```
+
+with the token in `.env` (key resolution order: `LABEL_API_KEY` →
+`OPENAI_LIKE_API_KEY` → `OPENAI_API_KEY`). You can also set `LABEL_API_BASE`
+in `.env` instead of the YAML. Find the exact model name your server exposes
+with `curl http://localhost:8888/v1/models`.
+
+Labeling is non-fatal: if the model server is unreachable, topics keep their
+keyword labels and everything else proceeds normally.
+
 ## Input formats
 
 | Format | Extension | Description |
@@ -111,7 +156,7 @@ For a dataset named `<name>` (e.g. `my_dataset`), output goes to `<output_dir>/`
 ## Requirements
 
 - Python 3.12 (uunet, used for multilayer networks, does not ship wheels for 3.13+ yet)
-- Optional: Docker (for Qdrant vector search), OpenAI API key (for OpenAI embeddings / topic labeling)
+- Optional: Ollama + `topiclayers[labeling]` extra (LLM topic labeling), Docker (for Qdrant vector search), OpenAI API key (for OpenAI embeddings)
 
 ## Planned: JOSS software paper
 

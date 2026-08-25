@@ -27,6 +27,21 @@ class TopicModelConfig:
     # "pca" (seeded) is deterministic and ~20x faster than "spectral"
     # with equal or better clustering quality; see docs/UMAP_INIT_BENCHMARK.md
     umap_init: str = "pca"
+    # LLM used to label topics (any LiteLLM model string). Requires the
+    # 'labeling' extra: pip install 'topiclayers[labeling]'. Set to "" to
+    # disable. Non-fatal: if unreachable, topics keep their keyword labels.
+    label_model: str = "ollama/qwen2.5:7b"
+    # Base URL of an OpenAI-compatible endpoint for label_model (e.g.
+    # "http://localhost:8888/v1" for a local Unsloth/llama.cpp/vLLM server).
+    # When set, prefix the model with "openai/", e.g.
+    #   label_model: openai/unsloth/Qwen3.8-27B-GGUF
+    # The API key is read from LABEL_API_KEY, OPENAI_LIKE_API_KEY or
+    # OPENAI_API_KEY (in that order). Leave "" for Ollama/OpenAI defaults.
+    label_api_base: str = ""
+    # Dataset-level context for labeling ("all documents are ..."), so the LLM
+    # labels the specific subtopic instead of the general domain. Empty = auto
+    # (derived from `name` when it matches cop<number>).
+    label_context: str = ""
 
 
 @dataclass
