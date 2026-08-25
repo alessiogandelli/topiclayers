@@ -1,14 +1,17 @@
 # %%
+import importlib
 from tweets_to_topic_network.data import Data_processor 
+from tweets_to_topic_network import topic
+importlib.reload(topic)
 from tweets_to_topic_network.topic import Topic_modeler
 from tweets_to_topic_network.network import Network_creator
 
 n_cop = 'cop22'
 
-file_tweets = '/Users/alessiogandelli/data/' + n_cop + '/' + n_cop + '.json'
+#file_tweets = '/Users/alessiogandelli/data/' + n_cop + '/' + n_cop + '.json'
 #file_user = '/Users/alessiogandelli/data/' + n_cop + '/users_'+ n_cop+'.json'
-
-# file_tweets = '/Users/alessiogandelli/dev/uni/tweets-to-topic-network/data/toy.json'
+#file_tweets= '/Volumes/NEO storage/data/climate_network/test/sample.json'
+file_tweets = '/Users/alessiogandelli/dev/uni/tweets-to-topic-network/data/cop22.json'
 # file_user = '/Users/alessiogandelli/dev/uni/tweets-to-topic-network/data/toy_users.json'
 
 #%%

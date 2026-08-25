@@ -277,3 +277,7 @@ macbook pro 14
 2 h for processing the json file 
 4 h for extracting topics 
 18 h for creating the networks 
+
+
+# Troubleshooting
+since there is a dependency on uunet which uses older cmake version you could have problems installing it with python 3.12, but with python 3.11 it should work fine.

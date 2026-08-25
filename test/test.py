@@ -1,15 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
 # %%
 import pandas as pd
 
@@ -55,4 +43,10 @@ nx.draw_networkx_nodes(G, pos, node_color=[('red' if node[1]['bipartite'] == 1 e
 nx.draw_networkx_labels(G, pos)
 nx.draw_networkx_edges(G, pos)
 plt.show()
+# %%
+
+
+
+
+
 # %%

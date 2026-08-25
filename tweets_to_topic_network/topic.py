@@ -21,11 +21,17 @@ from openai import OpenAI
 try:
     from cuml.cluster import HDBSCAN
     from cuml.manifold import UMAP
-    umap_model = UMAP(n_components=5, n_neighbors=15, min_dist=0.0)
-    hdbscan_model = HDBSCAN(min_samples=10, gen_min_span_tree=True, prediction_data=True)
+    USE_CUML = True
+    print('Using cuML for GPU acceleration')
 except:
-    from umap import UMAP
-    print('cuml not found')
+    try:
+        from umap import UMAP
+        from hdbscan import HDBSCAN
+        USE_CUML = False
+        print('Using CPU-based UMAP and HDBSCAN')
+    except ImportError as e:
+        print(f'Warning: Could not import UMAP/HDBSCAN: {e}')
+        USE_CUML = False
 
 try:
     openai_client = OpenAI()
@@ -92,10 +98,13 @@ class Topic_modeler:
             print( '    ',datetime.datetime.now() - time, ' for embeddings')
             self._use_BERTopic(docs, nr_topics, min_topic_size, umap_model, hdbscan_model, representation_model)
             print( '    ',datetime.datetime.now() - time, ' for bertopic')
-            self._save_embeddings(docs)
-            print( '    ',datetime.datetime.now() - time, ' for saving embeddings')
-            self._save_files()
-            print( '    ',datetime.datetime.now() - time, ' for saving files')
+            if self.model is not None:
+                self._save_embeddings(docs)
+                print( '    ',datetime.datetime.now() - time, ' for saving embeddings')
+                self._save_files()
+                print( '    ',datetime.datetime.now() - time, ' for saving files')
+            else:
+                print('    Model fitting failed, skipping save operations')
         
 
         print('topics created in ', datetime.datetime.now() - time)
@@ -159,42 +168,104 @@ class Topic_modeler:
             pickle.dump(self.embeddings, f)
 
     def _use_BERTopic(self, docs, nr_topics = 'auto', min_topic_size = 50, umap_model = None, hdbscan_model = None, representation_model = None):
-        vectorizer_model = CountVectorizer(stop_words="english") 
-        # we can also change some parameter of the cTFIDF model https://maartengr.github.io/BERTopic/getting_started/ctfidf/ctfidf.html#reduce_frequent_words
-        ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
-
-        # try:
-        #     representation_model = BERTOpenAI(openai_client, model="gpt-3.5-turbo", chat=True)
-        # except:
-        #     representation_model = None
-        #     print('representation model not found')
-
-        model = BERTopic( 
-                            vectorizer_model =   vectorizer_model,
-                            ctfidf_model      =   ctfidf_model,
-                            nr_topics        =  nr_topics,
-                            min_topic_size   =   min_topic_size,
-                            umap_model=umap_model,
-                            hdbscan_model=hdbscan_model,
-                            representation_model = representation_model
-                        )
-        print('         model created')
+        # Validate inputs
+        if not docs or len(docs) == 0:
+            raise ValueError("No documents provided for topic modeling")
+        
+        if len(docs) < min_topic_size * 2:
+            print(f'Warning: Only {len(docs)} documents, but min_topic_size is {min_topic_size}. Reducing min_topic_size.')
+            min_topic_size = max(2, len(docs) // 10)
         
         try:
-            topics ,probs = model.fit_transform(docs, embeddings = self.embeddings)
-            self.df['topic'] = topics    
-            self.df['topic_prob'] = probs   
+            # Use min_df to avoid vocabulary issues with small datasets
+            min_df_value = max(1, min(5, len(docs) // 100))
+            vectorizer_model = CountVectorizer(
+                stop_words="english",
+                min_df=min_df_value,
+                max_df=0.95
+            )
+            
+            ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
+            
+            # Create UMAP/HDBSCAN models if not provided
+            if umap_model is None:
+                n_neighbors = min(15, len(docs) - 1)
+                n_components = min(5, len(docs) - 1)
+                if USE_CUML:
+                    umap_model = UMAP(
+                        n_components=n_components,
+                        n_neighbors=n_neighbors,
+                        min_dist=0.0,
+                        metric='cosine'
+                    )
+                else:
+                    umap_model = UMAP(
+                        n_components=n_components,
+                        n_neighbors=n_neighbors,
+                        min_dist=0.0,
+                        metric='cosine',
+                        random_state=42
+                    )
+            
+            if hdbscan_model is None:
+                min_cluster_size = max(2, min_topic_size)
+                if USE_CUML:
+                    hdbscan_model = HDBSCAN(
+                        min_samples=max(1, min_topic_size // 5),
+                        min_cluster_size=min_cluster_size,
+                        gen_min_span_tree=True,
+                        prediction_data=True
+                    )
+                else:
+                    hdbscan_model = HDBSCAN(
+                        min_samples=max(1, min_topic_size // 5),
+                        min_cluster_size=min_cluster_size,
+                        prediction_data=True
+                    )
+
+            model = BERTopic(
+                vectorizer_model=vectorizer_model,
+                ctfidf_model=ctfidf_model,
+                nr_topics=nr_topics,
+                min_topic_size=min_topic_size,
+                umap_model=umap_model,
+                hdbscan_model=hdbscan_model,
+                calculate_probabilities=True,
+                verbose=True
+            )
+            print('         model created')
+            
+            topics, probs = model.fit_transform(docs, embeddings=self.embeddings)
+            
+            # Check if any topics were found
+            unique_topics = len(set(topics))
+            print(f'         Found {unique_topics} unique topics')
+            
+            if unique_topics <= 1:
+                print('         Warning: Only outlier topic found. Try reducing min_topic_size or increasing dataset size.')
+            
+            self.df['topic'] = topics
+            if hasattr(probs, 'ndim') and probs.ndim == 2:
+                self.df['topic_prob'] = probs.max(axis=1)
+            else:
+                self.df['topic_prob'] = probs
             print('         model fitted')
 
-            #df_cop['embedding'] = embeddings   
-            model.get_topic_info().to_csv(self.topic_path)
-            self.model = model          
+            # Save topic info
+            topic_info = model.get_topic_info()
+            os.makedirs(os.path.dirname(self.topic_path), exist_ok=True)
+            topic_info.to_csv(self.topic_path)
+            self.model = model
             print('         model saved')
 
         except Exception as e:
-            print(e)
-            print('error in topic modeling')
+            import traceback
+            print(f'Error in topic modeling: {e}')
+            print('Full traceback:')
+            traceback.print_exc()
             self.df['topic'] = -1
+            self.df['topic_prob'] = None
+            self.model = None
 
     def _save_embeddings(self,docs):
         ids = self.df.index.tolist()

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tweets-to-topic-network"
-version = "0.1.9"
+version = "0.1.10"
 description = "start from a set of tweets and create a multilayer network where each layer is a topic"
 authors = ["alessiogandelli <alessiogandelli99@gmail.com>"]
 readme = "README.md"
@@ -24,6 +24,8 @@ langchain = "^0.1.16"
 flask = "^3.0.3"
 tiktoken = "^0.6.0"
 pipdeptree = "^2.22.0"
+seaborn = "^0.13.2"
+python-dotenv = "^1.0.1"
 
 
 
