@@ -10,6 +10,7 @@ from typing import Optional
 import pandas as pd
 
 from topiclayers.support.cache import cache_key
+from topiclayers.status import log_via
 from topiclayers.schema import InteractionType, Post
 
 _INTERACTION_REVERSE_MAP = {
@@ -82,8 +83,8 @@ class Dataset:
                 self.df_users = pd.read_pickle(users_pkl)
         else:
             if tweets_pkl.exists():
-                print("Cache key mismatch — regenerating data cache.")
-            users_dict = self._load_user_dict() if self.file_user is not None else {}
+                log_via(reporter, "Cache key mismatch — regenerating data cache.")
+            users_dict = self._load_user_dict(reporter=reporter) if self.file_user is not None else {}
             tweets_dict = {}
             for i, post in enumerate(self.posts):
                 if reporter is not None:
@@ -135,13 +136,13 @@ class Dataset:
 
         self._create_dataframes()
 
-    def _load_user_dict(self) -> dict:
+    def _load_user_dict(self, reporter=None) -> dict:
         import json
 
         if self.file_user is None:
             return {}
         if not self.file_user.exists():
-            print(f"User file not found: {self.file_user} — skipping user metadata.")
+            log_via(reporter, f"User file not found: {self.file_user} — skipping user metadata.")
             return {}
 
         users = {}
@@ -167,7 +168,7 @@ class Dataset:
         self.df_quotes = df[df["referenced_type"] == "quoted"].copy()
         self.df_reply = df[df["referenced_type"] == "replied_to"].copy()
 
-    def update_df(self, df_labeled: pd.DataFrame) -> pd.DataFrame:
+    def update_df(self, df_labeled: pd.DataFrame, reporter=None) -> pd.DataFrame:
         if "id" in df_labeled.columns and df_labeled.index.name != "id":
             df_labeled = df_labeled.set_index("id")
 
@@ -197,9 +198,9 @@ class Dataset:
             resolved[idx] = val
 
         self.df_retweets_labeled["topic"] = self.df_retweets_labeled.index.map(resolved)
-        print(f"Unresolved references: {unresolved_count}")
+        log_via(reporter, f"Unresolved references: {unresolved_count}")
         if unresolved_count > 0:
-            print(f"  {unresolved_count} retweets could not be resolved to a topic. These will be excluded from the labeled output.")
+            log_via(reporter, f"  {unresolved_count} retweets could not be resolved to a topic. These will be excluded from the labeled output.")
 
         self.df_retweets_labeled = self.df_retweets_labeled[
             self.df_retweets_labeled["topic"].apply(lambda x: not isinstance(x, str))

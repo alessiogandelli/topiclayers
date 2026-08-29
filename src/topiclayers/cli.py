@@ -45,14 +45,16 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
 
     status.stage("load")
     fmt, loader = resolve_adapter(input_path)
-    print(f"Loading posts via '{fmt}' adapter from {input_path}")
+    status.log(f"Loading posts via '{fmt}' adapter from {input_path}")
     posts = loader(input_path)
-    print(f"  {len(posts)} posts loaded")
+    status.log(f"  {len(posts)} posts loaded")
 
     row_counts = {"raw_posts": len(posts)}
     tm = None
 
-    cache_dir = config.output_dir / "cache"
+    cache_dir = config.cache_dir or (input_path.parent / "cache")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    status.log(f"Cache: {cache_dir.resolve()}")
 
     status.stage("data", total=len(posts))
     ds = Dataset(posts, n_cop=config.name, file_user=config.input.users)
@@ -60,11 +62,11 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
     row_counts["tweets"] = len(ds.df_tweets)
     row_counts["original"] = len(ds.df_original)
     row_counts["retweets"] = len(ds.df_retweets)
-    print(f"  {len(ds.df_original)} original, {len(ds.df_retweets)} retweets, "
-          f"{len(ds.df_quotes)} quotes, {len(ds.df_reply)} replies")
+    status.log(f"  {len(ds.df_original)} original, {len(ds.df_retweets)} retweets, "
+               f"{len(ds.df_quotes)} quotes, {len(ds.df_reply)} replies")
 
     if len(ds.df_original) == 0:
-        print("  No original posts found — skipping topic modeling. All retweets will be assigned topic -1.")
+        status.log("  No original posts found — skipping topic modeling. All retweets will be assigned topic -1.")
         df_labeled = ds.df_original.copy()
         df_labeled["topic"] = -1
         df_labeled["topic_prob"] = None
@@ -88,15 +90,15 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
                 umap_init=config.topic_model.umap_init,
             )
         except RuntimeError as e:
-            print(f"  Topic modeling failed: {e}")
-            print("  Assigning topic -1 to all originals and continuing.")
+            status.log(f"  Topic modeling failed: {e}")
+            status.log("  Assigning topic -1 to all originals and continuing.")
             df_labeled = ds.df_original.copy()
             df_labeled["topic"] = -1
             df_labeled["topic_prob"] = None
         row_counts["labeled_originals"] = len(df_labeled)
         topic_counts = df_labeled["topic"].value_counts().to_dict()
         topic_dist = {str(k): int(v) for k, v in topic_counts.items()}
-        print(f"  {len(topic_dist)} topics found (including -1 outlier)")
+        status.log(f"  {len(topic_dist)} topics found (including -1 outlier)")
 
     status.stage("label")
     if config.topic_model.label_model and tm is not None and tm.model is not None:
@@ -104,8 +106,9 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
             model=config.topic_model.label_model,
             api_base=config.topic_model.label_api_base,
             label_context=config.topic_model.label_context,
+            reporter=status,
         )
-    df_labeled = ds.update_df(df_labeled)
+    df_labeled = ds.update_df(df_labeled, reporter=status)
     ds._save_labeled_dataframe(cache_dir)
     row_counts["retweets_labeled"] = len(df_labeled)
 
@@ -120,7 +123,7 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
         try:
             nw.create_retweet_ml(reporter=status)
         except ValueError as e:
-            print(f"  Skipping multilayer network: {e}")
+            status.log(f"  Skipping multilayer network: {e}")
     elif network_type == "retweet":
         nw.create_retweet_network(reporter=status)
     elif network_type == "ttn":
@@ -130,11 +133,11 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
         try:
             nw.create_retweet_ml(reporter=status)
         except ValueError as e:
-            print(f"  Skipping multilayer network: {e}")
+            status.log(f"  Skipping multilayer network: {e}")
         nw.create_ttnetwork(project=config.network.project_ttn)
     else:
-        print(f"Unknown network type: '{network_type}'. "
-              f"Use one of: multilayer_repost, retweet, ttn, all.", file=sys.stderr)
+        status.log(f"Unknown network type: '{network_type}'. "
+                    f"Use one of: multilayer_repost, retweet, ttn, all.")
         sys.exit(1)
 
     status.stage("manifest")
@@ -166,7 +169,6 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
     status.finish("success")
     print(f"\nDone. Output in {config.output_dir.resolve()}")
     print(f"  Run manifest: {config.output_dir / 'run_manifest.json'}")
-
 
 def _cmd_init(dest: Path) -> None:
     import shutil

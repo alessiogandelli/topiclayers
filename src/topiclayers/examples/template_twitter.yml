@@ -79,6 +79,12 @@ network:
   project_ttn: true              # ttn only: also export the projected monopartite
                                  # version
 
-output_dir: ./out/cop22          # everything lands here: networks/, cache/
-                                 # (embeddings, model, labeled df), run_manifest.json,
-                                 # run_status.json
+output_dir: ./out/cop22          # research outputs only: networks/, run_manifest.json,
+                                 # run_status.json, stage_timings.json
+
+# cache_dir: ./cache              # optional — where reusable artifacts live (processed
+                                  # data, embeddings, topic model). Defaults to a
+                                  # 'cache/' folder next to the input data file, so it
+                                  # persists regardless of output_dir and is shared
+                                  # between runs; safe to share across datasets (files
+                                  # are prefixed with `name`)

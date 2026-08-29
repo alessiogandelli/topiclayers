@@ -62,7 +62,7 @@ def test_stage_timings_recorded(tmp_output_dir):
     rs.stage("embed")
     rs.finish("success")
 
-    timings_path = tmp_output_dir / "cache" / "stage_timings.json"
+    timings_path = tmp_output_dir / "stage_timings.json"
     assert timings_path.exists()
     records = json.loads(timings_path.read_text())
     stages_seen = [r["stage"] for r in records]
@@ -71,8 +71,7 @@ def test_stage_timings_recorded(tmp_output_dir):
 
 
 def test_historical_eta(tmp_output_dir):
-    timings_path = tmp_output_dir / "cache" / "stage_timings.json"
-    timings_path.parent.mkdir(parents=True)
+    timings_path = tmp_output_dir / "stage_timings.json"
     timings_path.write_text(json.dumps([
         {"stage": "embed", "duration_seconds": 10.0},
         {"stage": "embed", "duration_seconds": 20.0},

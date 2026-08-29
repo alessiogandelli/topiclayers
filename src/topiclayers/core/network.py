@@ -5,6 +5,8 @@ from pathlib import Path
 import networkx as nx
 import pandas as pd
 
+from topiclayers.status import log_via
+
 
 class NetworkCreator:
     def __init__(self, df: pd.DataFrame, name: str, output_dir: Path):
@@ -25,7 +27,7 @@ class NetworkCreator:
         )
 
         if missing_refs:
-            print(f"  {missing_refs} retweets reference tweets not in dataset — skipped.")
+            log_via(reporter, f"  {missing_refs} retweets reference tweets not in dataset — skipped.")
 
         self._save_graph(G, "retweet")
         return G
@@ -101,7 +103,7 @@ class NetworkCreator:
             ml.add_nx_layer(ml_network, G, str(topic))
 
         if dropped_edges_total:
-            print(f"  {dropped_edges_total} edges dropped (referenced tweet missing in topic slice).")
+            log_via(reporter, f"  {dropped_edges_total} edges dropped (referenced tweet missing in topic slice).")
 
         self._save_multilayer(ml_network)
         self.ml_network = ml_network

@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from topiclayers.support.cache import cache_key
+from topiclayers.status import log_via
 
 
 class TopicModeler:
@@ -77,7 +78,7 @@ class TopicModeler:
                 except Exception:
                     pass
             if cache_valid:
-                print("using cached topics")
+                log_via(reporter, "using cached topics")
                 self.df = pd.read_pickle(self.df_labeled_path)
                 from bertopic import BERTopic
                 self.model = BERTopic.load(self.model_path)
@@ -85,7 +86,7 @@ class TopicModeler:
                     self.docs = self.df["new_text"].tolist()
                 return self.df
 
-        print("running topic modeling")
+        log_via(reporter, "running topic modeling")
         docs = self._preprocess()
 
         if self.embeddings_path.exists():
@@ -101,7 +102,7 @@ class TopicModeler:
                 except Exception:
                     pass
             if use_cached:
-                print("  loading embeddings from cache")
+                log_via(reporter, "  loading embeddings from cache")
                 with open(self.embeddings_path, "rb") as f:
                     self.embeddings = pickle.load(f)
             else:
@@ -214,6 +215,11 @@ class TopicModeler:
         repro_mode: str = "strict",
         umap_init: str = "pca",
     ) -> None:
+        # mark the stage before importing: torch/umap/bertopic imports take a
+        # while and would otherwise be billed to the previous stage
+        if reporter is not None:
+            reporter.stage("topic_model")
+
         import random
 
         from umap import UMAP
@@ -221,9 +227,6 @@ class TopicModeler:
         from sklearn.feature_extraction.text import CountVectorizer
         from bertopic import BERTopic
         from bertopic.vectorizers import ClassTfidfTransformer
-
-        if reporter is not None:
-            reporter.stage("topic_model")
 
         np.random.seed(random_state)
         random.seed(random_state)
@@ -293,7 +296,9 @@ class TopicModeler:
             # large corpora); the default computes the probability of the
             # assigned topic only — topics themselves are identical
             calculate_probabilities=exact_probabilities,
-            verbose=True,
+            # False: BERTopic's per-step INFO logging would clobber the live
+            # progress line; our reporter provides the progress feedback
+            verbose=False,
         )
 
         try:
@@ -350,7 +355,7 @@ class TopicModeler:
     def _save_qdrant(self, docs: list[str], reporter=None) -> None:
         qdrant_url = os.getenv("QDRANT_URL")
         if not qdrant_url:
-            print("Qdrant not configured — skipping. Set QDRANT_URL in .env to enable vector search.")
+            log_via(reporter, "Qdrant not configured — skipping. Set QDRANT_URL in .env to enable vector search.")
             return
 
         try:
@@ -386,8 +391,8 @@ class TopicModeler:
             if reporter is not None:
                 reporter.update(len(points), total=len(points))
         except Exception as e:
-            print(f"Qdrant upload failed (non-fatal): {type(e).__name__}: {e}")
-            print("The pipeline continues — networks and topic labels are unaffected.")
+            log_via(reporter, f"Qdrant upload failed (non-fatal): {type(e).__name__}: {e}")
+            log_via(reporter, "The pipeline continues — networks and topic labels are unaffected.")
 
     def _save_files(self) -> None:
         self.df_labeled_path.parent.mkdir(parents=True, exist_ok=True)
@@ -409,6 +414,7 @@ class TopicModeler:
         batch_size: int = 40,
         label_context: str = "",
         max_topics: int = 0,
+        reporter=None,
     ) -> dict[int, str]:
         """Label topics with an LLM, batching many topics per request.
 
@@ -443,18 +449,19 @@ class TopicModeler:
         api_base = api_base or os.getenv("LABEL_API_BASE", "")
 
         if self.model is None:
-            print("  No fitted topic model — skipping LLM labeling.")
+            log_via(reporter, "  No fitted topic model — skipping LLM labeling.")
             return {}
 
         topic_info = self.model.get_topic_info()
         if "LLM_label" in topic_info.columns and not overwrite:
-            print("  LLM labels already present — skipping (use overwrite=True).")
+            log_via(reporter, "  LLM labels already present — skipping (use overwrite=True).")
             return {}
 
         try:
             import litellm  # noqa: F401
         except ImportError:
-            print(
+            log_via(
+                reporter,
                 "  LLM labeling skipped: 'litellm' is not installed.\n"
                 "    Install it with: pip install 'topiclayers[labeling]'\n"
                 "    Topics keep their c-TF-IDF keyword labels."
@@ -470,7 +477,8 @@ class TopicModeler:
                 conn.getresponse().read()
                 conn.close()
             except (OSError, socket.timeout):
-                print(
+                log_via(
+                    reporter,
                     f"  LLM labeling skipped: Ollama not reachable at {host}:{port}.\n"
                     f"    Start it with: ollama serve   (then pull the model:\n"
                     f"    ollama pull {model.split('/', 1)[1]})\n"
@@ -486,7 +494,8 @@ class TopicModeler:
                 or os.getenv("OPENAI_API_KEY")
             )
             if not api_key:
-                print(
+                log_via(
+                    reporter,
                     "  LLM labeling skipped: custom api_base set but no API key found.\n"
                     "    Set LABEL_API_KEY (or OPENAI_LIKE_API_KEY / OPENAI_API_KEY) in .env."
                 )
@@ -515,12 +524,12 @@ class TopicModeler:
             entries.append((tid, keywords, docs_str))
 
         if not entries:
-            print("  No non-outlier topics to label.")
+            log_via(reporter, "  No non-outlier topics to label.")
             return {}
 
         if max_topics and max_topics < len(entries):
             entries = entries[:max_topics]  # topic_info is sorted by size
-            print(f"  Preview mode: labeling only the {max_topics} largest topics.")
+            log_via(reporter, f"  Preview mode: labeling only the {max_topics} largest topics.")
 
         system_msg = (
             "You annotate discussion topics from social media.\n"
@@ -577,16 +586,17 @@ class TopicModeler:
                         _load_openai_like_model(model, api_base, generator_kwargs.get("api_key", ""))
                         continue
                     if attempt == 1:
-                        print(f"  Batch {i // batch_size + 1}/{n_chunks}: {type(e).__name__}, retrying once.")
+                        log_via(reporter, f"  Batch {i // batch_size + 1}/{n_chunks}: {type(e).__name__}, retrying once.")
                         continue
                     failed += 1
-                    print(
+                    log_via(
+                        reporter,
                         f"  Batch {i // batch_size + 1}/{n_chunks} failed (non-fatal): "
                         f"{type(e).__name__}: {str(e)[:120]} — those topics keep keyword labels."
                     )
 
         if not llm_labels:
-            print("  No labels generated — topics keep their c-TF-IDF keyword labels.")
+            log_via(reporter, "  No labels generated — topics keep their c-TF-IDF keyword labels.")
             return {}
 
         # expose labels as an aspect column named LLM_label in get_topic_info()
@@ -609,7 +619,7 @@ class TopicModeler:
         info.to_csv(self.topic_path)
         ok = len(llm_labels)
         suffix = f", {failed} batch(es) failed" if failed else ""
-        print(f"  Labeled {ok} topics with '{model}' in {n_chunks} batch(es){suffix}.")
+        log_via(reporter, f"  Labeled {ok} topics with '{model}' in {n_chunks} batch(es){suffix}.")
         return labels
 
 

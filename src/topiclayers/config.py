@@ -57,6 +57,12 @@ class RunConfig:
     topic_model: TopicModelConfig = field(default_factory=TopicModelConfig)
     network: NetworkConfig = field(default_factory=NetworkConfig)
     output_dir: Path = Path("./out")
+    # Where reusable artifacts (processed data, embeddings, models) live.
+    # Defaults to a 'cache/' folder next to the input data, so the cache
+    # survives output_dir changes and is shared across runs. Independent
+    # datasets can share one cache dir: all cache files are prefixed with
+    # the dataset `name`.
+    cache_dir: Optional[Path] = None
 
     @classmethod
     def from_yaml(cls, path: Path) -> "RunConfig":
@@ -75,10 +81,21 @@ class RunConfig:
                     p = (path.parent / p).resolve()
                 input_raw[key] = p
 
+        cache_dir = raw.get("cache_dir")
+        if cache_dir:
+            cache_dir = Path(cache_dir)
+            if not cache_dir.is_absolute():
+                cache_dir = (path.parent / cache_dir).resolve()
+        else:
+            # default: keep the cache next to the input data
+            posts = input_raw.get("posts")
+            cache_dir = posts.parent / "cache" if posts else Path("./cache")
+
         return cls(
             input=InputConfig(**input_raw),
             name=raw.get("name", "default"),
             topic_model=TopicModelConfig(**raw.get("topic_model", {})),
             network=NetworkConfig(**raw.get("network", {})),
             output_dir=Path(raw.get("output_dir", "./out")),
+            cache_dir=cache_dir,
         )

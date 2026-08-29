@@ -41,4 +41,9 @@ network:
                                  # interaction_type=repost rows to build edges
   project_ttn: true
 
-output_dir: ./out/my_dataset
+output_dir: ./out/my_dataset     # research outputs only: networks/, run_manifest.json,
+                                 # run_status.json, stage_timings.json
+
+# cache_dir: ./cache             # optional — where reusable artifacts live (processed
+                                 # data, embeddings, topic model). Defaults to a
+                                 # 'cache/' folder next to the input data file.

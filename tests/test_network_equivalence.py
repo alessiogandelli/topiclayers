@@ -13,16 +13,20 @@ import pytest
 
 from topiclayers.core.network import NetworkCreator
 
-CACHE = (
-    __file__.split("tests")[0] + "out/cop22/cache/data/retweet_labeled_cop22.pkl"
-)
+_ROOT = __file__.split("tests")[0]
+# preferred: cache beside the data (new default); fallback: pre-0.3 output-dir cache
+_CACHE_CANDIDATES = [
+    _ROOT + "data/cache/data/retweet_labeled_cop22.pkl",
+    _ROOT + "out/cop22/cache/data/retweet_labeled_cop22.pkl",
+]
 
 
 def _load_df() -> pd.DataFrame:
     import os
 
-    if os.path.exists(CACHE):
-        return pd.read_pickle(CACHE)
+    for candidate in _CACHE_CANDIDATES:
+        if os.path.exists(candidate):
+            return pd.read_pickle(candidate)
     pytest.skip("cop22 cache not available")
 
 

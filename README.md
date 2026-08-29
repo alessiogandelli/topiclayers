@@ -67,7 +67,7 @@ Stage ETA: ~35m 20s
 Total elapsed: 21m 05s
 ```
 
-Stages are `load → data → embed → topic_model → label → network → manifest`. Stages with a per-item counter (data, embed, network) report a live ETA. Opaque stages (BERTopic's UMAP+HDBSCAN) fall back to the median duration of past runs, stored in `<output_dir>/cache/stage_timings.json`.
+Stages are `load → data → embed → topic_model → label → network → manifest`. Stages with a per-item counter (data, embed, network) report a live ETA. Opaque stages (BERTopic's UMAP+HDBSCAN) fall back to the median duration of past runs, stored in `<output_dir>/stage_timings.json`. While running, the terminal itself shows a live progress line (spinner, counter, ETA, elapsed time) that keeps ticking even in stages without a counter, plus a per-stage duration summary when the run finishes.
 
 ## Topic labeling with an LLM (optional)
 
@@ -144,12 +144,7 @@ For a dataset named `<name>` (e.g. `my_dataset`), output goes to `<output_dir>/`
 <output_dir>/
 ├── run_manifest.json              # Reproducibility metadata
 ├── run_status.json                # Live stage/ETA tracking (while running)
-├── cache/
-│   └── data/
-│       ├── tweets_<name>.pkl/.csv          # Full tweet table
-│       ├── retweet_labeled_<name>.pkl/.csv # Retweets with topic labels
-│       └── manifest_<name>.json            # Cache validity key
-│   └── stage_timings.json         # Per-stage durations for ETA prediction
+├── stage_timings.json             # Per-stage durations for ETA prediction
 └── networks/
     ├── <name>_retweet.gml                  # Single-layer retweet network
     ├── <name>_retweet_network_ml.gml       # Multilayer (uunet format)
@@ -158,12 +153,27 @@ For a dataset named `<name>` (e.g. `my_dataset`), output goes to `<output_dir>/`
         └── <name>__prj_<topic>.gml         # Per-topic projected networks
 ```
 
+Reusable artifacts (processed data, embeddings, the BERTopic model) go to the
+**cache**, not the output dir. By default the cache lives in a `cache/` folder
+**next to the input data file**, so it persists across runs regardless of
+`output_dir` and can be shared between configs (files are prefixed with the
+dataset `name`). Override the location with `cache_dir:` in the config:
+
+```
+<cache_dir>/
+├── data/
+│   ├── tweets_<name>.pkl/.csv          # Full tweet table
+│   ├── retweet_labeled_<name>.pkl/.csv # Retweets with topic labels
+│   └── manifest_<name>.json            # Cache validity key
+└── tm/<embedder_name>/
+    ├── embeddings_<name>.pkl           # Document embeddings
+    ├── topics_<name>.csv               # Topic table (with LLM labels)
+    └── model_<name>/                   # BERTopic safetensors dir
+```
+
 ## Requirements
 
 - Python 3.12 (uunet, used for multilayer networks, does not ship wheels for 3.13+ yet)
 - Optional: Ollama + `topiclayers[labeling]` extra (LLM topic labeling), Docker (for Qdrant vector search), OpenAI API key (for OpenAI embeddings)
 
-## Planned: JOSS software paper
 
-Once the API stabilises and the PLOS ONE core paper results are regenerated with this library,
-a short JOSS (Journal of Open Source Software) paper will be submitted with a Zenodo DOI.
