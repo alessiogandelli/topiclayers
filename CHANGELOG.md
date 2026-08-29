@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] — 2026-08-29
 
 ### Added
+- Live console progress: `topiclayers run` now renders colored stage banners, an in-place progress line (spinner, counter, percent, ETA, elapsed time) that keeps ticking even during stages without a per-item counter, and a per-stage duration summary when the run finishes. `RunStatus` gained a `log()` method so intermediate messages no longer clobber the progress line.
+- Optional `cache_dir` config key: where reusable artifacts (processed data, embeddings, topic model) live. Defaults to a `cache/` folder next to the input data file, so the cache persists regardless of `output_dir` and can be shared between runs and configs (files are prefixed with the dataset `name`).
+
+### Changed
+- `output_dir` now contains only research outputs (`networks/`, `run_manifest.json`, `run_status.json`); `stage_timings.json` moved from `<output_dir>/cache/` to `<output_dir>/` directly. Existing caches under an old `output_dir/cache/` are not migrated; delete them or point `cache_dir` at them explicitly.
 - Bundled runnable examples: `topiclayers init` copies example configs and toy datasets (CSV + Twitter JSONL) into `./examples/`, so a fresh pip install works end-to-end out of the box.
 
 ### Fixed
