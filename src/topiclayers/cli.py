@@ -88,6 +88,11 @@ def _run_pipeline_stages(config: RunConfig, input_path: Path, status) -> None:
                 exact_probabilities=config.topic_model.exact_probabilities,
                 repro_mode=config.topic_model.repro_mode,
                 umap_init=config.topic_model.umap_init,
+                umap_n_neighbors=config.topic_model.umap_n_neighbors,
+                umap_n_components=config.topic_model.umap_n_components,
+                embedder_prompt=config.topic_model.embedder_prompt,
+                embedder_normalize=config.topic_model.embedder_normalize,
+                embedder_device=config.topic_model.embedder_device,
             )
         except RuntimeError as e:
             status.log(f"  Topic modeling failed: {e}")

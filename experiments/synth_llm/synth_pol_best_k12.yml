@@ -1,0 +1,18 @@
+input:
+  format: twitter_jsonl
+  posts: synth_pol.jsonl
+name: synth_pol_best_k12
+topic_model:
+  embedder: Qwen/Qwen3-Embedding-0.6B
+  min_topic_size: 20
+  nr_topics: 12
+  umap_n_neighbors: 15
+  umap_n_components: 10
+  random_state: 42
+  repro_mode: strict
+  label_model: ''
+network:
+  type: multilayer_repost
+  project_ttn: false
+cache_dir: ../cache/synth_pol_best
+output_dir: out/synth_pol_best_k12

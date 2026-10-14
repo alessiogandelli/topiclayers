@@ -1,0 +1,11 @@
+topic,family,polarized,tricky_with
+cop_negotiations,clear,True,
+renewables,clear,False,
+climate_denial,clear,True,
+extreme_weather,clear,False,
+activism,clear,True,
+ev_transport,clear,True,
+carbon_pricing,tricky,True,cop_negotiations
+grid_storage,tricky,False,renewables
+doom_anxiety,tricky,True,climate_denial
+climate_health,tricky,False,extreme_weather

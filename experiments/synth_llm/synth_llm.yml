@@ -1,0 +1,22 @@
+input:
+  format: twitter_jsonl
+  posts: synth_llm.jsonl
+
+name: synth_llm
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 15
+  nr_topics: auto
+  random_state: 42
+  repro_mode: strict
+  label_model: gpt-6-luna
+  # all posts are climate/energy politics, so ask the LLM for the *subtopic*
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  type: all
+  project_ttn: true
+
+cache_dir: cache
+output_dir: out

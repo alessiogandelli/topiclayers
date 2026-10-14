@@ -1,0 +1,29 @@
+input:
+  format: twitter_jsonl
+  posts: synth_pol.jsonl
+
+name: synth_pol_best
+
+topic_model:
+  # Embedder bake-off winner (see EMBEDDER_REPORT.md / EMBEDDER_TUNING.md /
+  # COP22_VALIDATION.md): Qwen3-Embedding-0.6B nearly doubles ARI vs the old
+  # all-MiniLM-L6-v2 default and, unlike it, does not collapse the multilingual
+  # COP22 slice into a single "French stopwords" topic.
+  embedder: Qwen/Qwen3-Embedding-0.6B
+  # model-specific treatment is auto-derived (Qwen3 instruction + normalisation);
+  # override with embedder_prompt / embedder_normalize if needed.
+  min_topic_size: 50
+  nr_topics: null
+  umap_n_neighbors: 15
+  umap_n_components: 10
+  random_state: 42
+  repro_mode: strict
+  label_model: gpt-6-luna
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  type: multilayer_repost
+  project_ttn: false
+
+cache_dir: ../cache/synth_pol_best
+output_dir: out/synth_pol_best

@@ -140,5 +140,25 @@ out/
 runs/
 .qdrant_storage/
 
+# local scratch space
+tmp/
+
 # stage cache (beside data or custom cache_dir)
 cache/
+
+# experiments: track write-ups, configs and scripts; ignore corpora + run artifacts
+# (cache/ above already covers experiments/cache/ and experiments/synth_llm/cache/)
+experiments/datasets/
+experiments/outputs/
+experiments/synth_llm/llm_cache/
+experiments/synth_llm/llm_cache_v2/
+experiments/synth_llm/out/
+experiments/synth_llm/out_overgranular/
+experiments/synth_llm/out_resolved/
+experiments/synth_llm/out_t12/
+experiments/synth_llm/sweep_assignments/
+experiments/synth_llm/__pycache__/
+
+# runnable examples copied by `topiclayers init` (canonical copy is src/topiclayers/examples/)
+/examples/
+

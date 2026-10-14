@@ -1,0 +1,611 @@
+[
+  {
+    "name": "synth_pol",
+    "n": 7011,
+    "k": 67,
+    "outlier_rate": 0.164,
+    "minus1_family": {
+      "clear": 768,
+      "tricky": 265,
+      "outlier": 72,
+      "bridge": 47
+    },
+    "metrics": {
+      "ari": 0.146,
+      "homogeneity": 0.576,
+      "completeness": 0.394,
+      "v_measure": 0.468,
+      "purity": 0.644,
+      "best_mapping_accuracy": 0.264
+    },
+    "outlier": {
+      "true_outlier_reject_recall": 0.24,
+      "false_outlier_rate": 0.161
+    },
+    "per_topic": [
+      {
+        "true_topic": "activism",
+        "n": 717,
+        "dominant_cluster": -1,
+        "share": 0.215,
+        "outlier_frac": 0.215
+      },
+      {
+        "true_topic": "bridge_cop_pricing",
+        "n": 40,
+        "dominant_cluster": 2,
+        "share": 0.4,
+        "outlier_frac": 0.15
+      },
+      {
+        "true_topic": "bridge_denial_doom",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.575,
+        "outlier_frac": 0.575
+      },
+      {
+        "true_topic": "bridge_renew_grid",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.425,
+        "outlier_frac": 0.425
+      },
+      {
+        "true_topic": "bridge_weather_health",
+        "n": 40,
+        "dominant_cluster": 1,
+        "share": 0.55,
+        "outlier_frac": 0.025
+      },
+      {
+        "true_topic": "carbon_pricing",
+        "n": 480,
+        "dominant_cluster": 2,
+        "share": 0.652,
+        "outlier_frac": 0.071
+      },
+      {
+        "true_topic": "climate_denial",
+        "n": 658,
+        "dominant_cluster": -1,
+        "share": 0.284,
+        "outlier_frac": 0.284
+      },
+      {
+        "true_topic": "climate_health",
+        "n": 590,
+        "dominant_cluster": 1,
+        "share": 0.69,
+        "outlier_frac": 0.056
+      },
+      {
+        "true_topic": "cop_negotiations",
+        "n": 863,
+        "dominant_cluster": 9,
+        "share": 0.123,
+        "outlier_frac": 0.098
+      },
+      {
+        "true_topic": "doom_anxiety",
+        "n": 587,
+        "dominant_cluster": 8,
+        "share": 0.187,
+        "outlier_frac": 0.17
+      },
+      {
+        "true_topic": "ev_transport",
+        "n": 866,
+        "dominant_cluster": -1,
+        "share": 0.206,
+        "outlier_frac": 0.206
+      },
+      {
+        "true_topic": "extreme_weather",
+        "n": 598,
+        "dominant_cluster": 3,
+        "share": 0.313,
+        "outlier_frac": 0.052
+      },
+      {
+        "true_topic": "grid_storage",
+        "n": 594,
+        "dominant_cluster": -1,
+        "share": 0.165,
+        "outlier_frac": 0.165
+      },
+      {
+        "true_topic": "outlier",
+        "n": 300,
+        "dominant_cluster": 6,
+        "share": 0.623,
+        "outlier_frac": 0.24
+      },
+      {
+        "true_topic": "renewables",
+        "n": 598,
+        "dominant_cluster": -1,
+        "share": 0.222,
+        "outlier_frac": 0.222
+      }
+    ],
+    "tricky": [
+      {
+        "pair": "carbon_pricing / cop_negotiations",
+        "a_dominant": 2,
+        "a_share": 0.652,
+        "b_dominant": 9,
+        "b_share": 0.123,
+        "merged": false,
+        "a_in_b_cluster": 0.0
+      },
+      {
+        "pair": "grid_storage / renewables",
+        "a_dominant": -1,
+        "a_share": 0.165,
+        "b_dominant": -1,
+        "b_share": 0.222,
+        "merged": true,
+        "a_in_b_cluster": 0.165
+      },
+      {
+        "pair": "doom_anxiety / climate_denial",
+        "a_dominant": 8,
+        "a_share": 0.187,
+        "b_dominant": -1,
+        "b_share": 0.284,
+        "merged": false,
+        "a_in_b_cluster": 0.17
+      },
+      {
+        "pair": "climate_health / extreme_weather",
+        "a_dominant": 1,
+        "a_share": 0.69,
+        "b_dominant": 3,
+        "b_share": 0.313,
+        "merged": false,
+        "a_in_b_cluster": 0.003
+      }
+    ],
+    "bridge": [
+      {
+        "bridge": "bridge_cop_pricing",
+        "links": "cop_negotiations + carbon_pricing",
+        "n": 40,
+        "top_cluster": 2,
+        "owner_true_topic": "carbon_pricing",
+        "owner_share": 0.902
+      },
+      {
+        "bridge": "bridge_renew_grid",
+        "links": "renewables + grid_storage",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "climate_denial",
+        "owner_share": 0.162
+      },
+      {
+        "bridge": "bridge_denial_doom",
+        "links": "climate_denial + doom_anxiety",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "climate_denial",
+        "owner_share": 0.162
+      },
+      {
+        "bridge": "bridge_weather_health",
+        "links": "extreme_weather + climate_health",
+        "n": 40,
+        "top_cluster": 1,
+        "owner_true_topic": "climate_health",
+        "owner_share": 0.656
+      }
+    ]
+  },
+  {
+    "name": "synth_pol_coarse",
+    "n": 7011,
+    "k": 11,
+    "outlier_rate": 0.164,
+    "minus1_family": {
+      "clear": 768,
+      "tricky": 265,
+      "outlier": 72,
+      "bridge": 47
+    },
+    "metrics": {
+      "ari": 0.212,
+      "homogeneity": 0.389,
+      "completeness": 0.421,
+      "v_measure": 0.405,
+      "purity": 0.444,
+      "best_mapping_accuracy": 0.427
+    },
+    "outlier": {
+      "true_outlier_reject_recall": 0.24,
+      "false_outlier_rate": 0.161
+    },
+    "per_topic": [
+      {
+        "true_topic": "activism",
+        "n": 717,
+        "dominant_cluster": 2,
+        "share": 0.434,
+        "outlier_frac": 0.215
+      },
+      {
+        "true_topic": "bridge_cop_pricing",
+        "n": 40,
+        "dominant_cluster": 3,
+        "share": 0.55,
+        "outlier_frac": 0.15
+      },
+      {
+        "true_topic": "bridge_denial_doom",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.575,
+        "outlier_frac": 0.575
+      },
+      {
+        "true_topic": "bridge_renew_grid",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.425,
+        "outlier_frac": 0.425
+      },
+      {
+        "true_topic": "bridge_weather_health",
+        "n": 40,
+        "dominant_cluster": 1,
+        "share": 0.55,
+        "outlier_frac": 0.025
+      },
+      {
+        "true_topic": "carbon_pricing",
+        "n": 480,
+        "dominant_cluster": 3,
+        "share": 0.721,
+        "outlier_frac": 0.071
+      },
+      {
+        "true_topic": "climate_denial",
+        "n": 658,
+        "dominant_cluster": 6,
+        "share": 0.412,
+        "outlier_frac": 0.284
+      },
+      {
+        "true_topic": "climate_health",
+        "n": 590,
+        "dominant_cluster": 1,
+        "share": 0.737,
+        "outlier_frac": 0.056
+      },
+      {
+        "true_topic": "cop_negotiations",
+        "n": 863,
+        "dominant_cluster": 2,
+        "share": 0.419,
+        "outlier_frac": 0.098
+      },
+      {
+        "true_topic": "doom_anxiety",
+        "n": 587,
+        "dominant_cluster": 9,
+        "share": 0.232,
+        "outlier_frac": 0.17
+      },
+      {
+        "true_topic": "ev_transport",
+        "n": 866,
+        "dominant_cluster": 4,
+        "share": 0.56,
+        "outlier_frac": 0.206
+      },
+      {
+        "true_topic": "extreme_weather",
+        "n": 598,
+        "dominant_cluster": 5,
+        "share": 0.38,
+        "outlier_frac": 0.052
+      },
+      {
+        "true_topic": "grid_storage",
+        "n": 594,
+        "dominant_cluster": 7,
+        "share": 0.431,
+        "outlier_frac": 0.165
+      },
+      {
+        "true_topic": "outlier",
+        "n": 300,
+        "dominant_cluster": 8,
+        "share": 0.623,
+        "outlier_frac": 0.24
+      },
+      {
+        "true_topic": "renewables",
+        "n": 598,
+        "dominant_cluster": 5,
+        "share": 0.4,
+        "outlier_frac": 0.222
+      }
+    ],
+    "tricky": [
+      {
+        "pair": "carbon_pricing / cop_negotiations",
+        "a_dominant": 3,
+        "a_share": 0.721,
+        "b_dominant": 2,
+        "b_share": 0.419,
+        "merged": false,
+        "a_in_b_cluster": 0.0
+      },
+      {
+        "pair": "grid_storage / renewables",
+        "a_dominant": 7,
+        "a_share": 0.431,
+        "b_dominant": 5,
+        "b_share": 0.4,
+        "merged": false,
+        "a_in_b_cluster": 0.076
+      },
+      {
+        "pair": "doom_anxiety / climate_denial",
+        "a_dominant": 9,
+        "a_share": 0.232,
+        "b_dominant": 6,
+        "b_share": 0.412,
+        "merged": false,
+        "a_in_b_cluster": 0.201
+      },
+      {
+        "pair": "climate_health / extreme_weather",
+        "a_dominant": 1,
+        "a_share": 0.737,
+        "b_dominant": 5,
+        "b_share": 0.38,
+        "merged": false,
+        "a_in_b_cluster": 0.003
+      }
+    ],
+    "bridge": [
+      {
+        "bridge": "bridge_cop_pricing",
+        "links": "cop_negotiations + carbon_pricing",
+        "n": 40,
+        "top_cluster": 3,
+        "owner_true_topic": "carbon_pricing",
+        "owner_share": 0.501
+      },
+      {
+        "bridge": "bridge_renew_grid",
+        "links": "renewables + grid_storage",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "climate_denial",
+        "owner_share": 0.162
+      },
+      {
+        "bridge": "bridge_denial_doom",
+        "links": "climate_denial + doom_anxiety",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "climate_denial",
+        "owner_share": 0.162
+      },
+      {
+        "bridge": "bridge_weather_health",
+        "links": "extreme_weather + climate_health",
+        "n": 40,
+        "top_cluster": 1,
+        "owner_true_topic": "climate_health",
+        "owner_share": 0.594
+      }
+    ]
+  },
+  {
+    "name": "synth_pol_best",
+    "n": 7011,
+    "k": 28,
+    "outlier_rate": 0.08,
+    "minus1_family": {
+      "tricky": 308,
+      "clear": 188,
+      "outlier": 36,
+      "bridge": 31
+    },
+    "metrics": {
+      "ari": 0.587,
+      "homogeneity": 0.755,
+      "completeness": 0.619,
+      "v_measure": 0.68,
+      "purity": 0.839,
+      "best_mapping_accuracy": 0.606
+    },
+    "outlier": {
+      "true_outlier_reject_recall": 0.12,
+      "false_outlier_rate": 0.079
+    },
+    "per_topic": [
+      {
+        "true_topic": "activism",
+        "n": 717,
+        "dominant_cluster": 2,
+        "share": 0.937,
+        "outlier_frac": 0.026
+      },
+      {
+        "true_topic": "bridge_cop_pricing",
+        "n": 40,
+        "dominant_cluster": 3,
+        "share": 0.85,
+        "outlier_frac": 0.0
+      },
+      {
+        "true_topic": "bridge_denial_doom",
+        "n": 40,
+        "dominant_cluster": 4,
+        "share": 0.4,
+        "outlier_frac": 0.0
+      },
+      {
+        "true_topic": "bridge_renew_grid",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.35,
+        "outlier_frac": 0.35
+      },
+      {
+        "true_topic": "bridge_weather_health",
+        "n": 40,
+        "dominant_cluster": -1,
+        "share": 0.425,
+        "outlier_frac": 0.425
+      },
+      {
+        "true_topic": "carbon_pricing",
+        "n": 480,
+        "dominant_cluster": 3,
+        "share": 0.933,
+        "outlier_frac": 0.033
+      },
+      {
+        "true_topic": "climate_denial",
+        "n": 658,
+        "dominant_cluster": 11,
+        "share": 0.236,
+        "outlier_frac": 0.07
+      },
+      {
+        "true_topic": "climate_health",
+        "n": 590,
+        "dominant_cluster": 5,
+        "share": 0.525,
+        "outlier_frac": 0.158
+      },
+      {
+        "true_topic": "cop_negotiations",
+        "n": 863,
+        "dominant_cluster": 1,
+        "share": 0.72,
+        "outlier_frac": 0.02
+      },
+      {
+        "true_topic": "doom_anxiety",
+        "n": 587,
+        "dominant_cluster": 4,
+        "share": 0.722,
+        "outlier_frac": 0.121
+      },
+      {
+        "true_topic": "ev_transport",
+        "n": 866,
+        "dominant_cluster": 0,
+        "share": 0.968,
+        "outlier_frac": 0.009
+      },
+      {
+        "true_topic": "extreme_weather",
+        "n": 598,
+        "dominant_cluster": 6,
+        "share": 0.378,
+        "outlier_frac": 0.082
+      },
+      {
+        "true_topic": "grid_storage",
+        "n": 594,
+        "dominant_cluster": 8,
+        "share": 0.357,
+        "outlier_frac": 0.215
+      },
+      {
+        "true_topic": "outlier",
+        "n": 300,
+        "dominant_cluster": 19,
+        "share": 0.297,
+        "outlier_frac": 0.12
+      },
+      {
+        "true_topic": "renewables",
+        "n": 598,
+        "dominant_cluster": 7,
+        "share": 0.358,
+        "outlier_frac": 0.082
+      }
+    ],
+    "tricky": [
+      {
+        "pair": "carbon_pricing / cop_negotiations",
+        "a_dominant": 3,
+        "a_share": 0.933,
+        "b_dominant": 1,
+        "b_share": 0.72,
+        "merged": false,
+        "a_in_b_cluster": 0.013
+      },
+      {
+        "pair": "grid_storage / renewables",
+        "a_dominant": 8,
+        "a_share": 0.357,
+        "b_dominant": 7,
+        "b_share": 0.358,
+        "merged": false,
+        "a_in_b_cluster": 0.002
+      },
+      {
+        "pair": "doom_anxiety / climate_denial",
+        "a_dominant": 4,
+        "a_share": 0.722,
+        "b_dominant": 11,
+        "b_share": 0.236,
+        "merged": false,
+        "a_in_b_cluster": 0.002
+      },
+      {
+        "pair": "climate_health / extreme_weather",
+        "a_dominant": 5,
+        "a_share": 0.525,
+        "b_dominant": 6,
+        "b_share": 0.378,
+        "merged": false,
+        "a_in_b_cluster": 0.0
+      }
+    ],
+    "bridge": [
+      {
+        "bridge": "bridge_cop_pricing",
+        "links": "cop_negotiations + carbon_pricing",
+        "n": 40,
+        "top_cluster": 3,
+        "owner_true_topic": "carbon_pricing",
+        "owner_share": 0.9
+      },
+      {
+        "bridge": "bridge_renew_grid",
+        "links": "renewables + grid_storage",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "grid_storage",
+        "owner_share": 0.227
+      },
+      {
+        "bridge": "bridge_denial_doom",
+        "links": "climate_denial + doom_anxiety",
+        "n": 40,
+        "top_cluster": 4,
+        "owner_true_topic": "doom_anxiety",
+        "owner_share": 0.857
+      },
+      {
+        "bridge": "bridge_weather_health",
+        "links": "extreme_weather + climate_health",
+        "n": 40,
+        "top_cluster": -1,
+        "owner_true_topic": "grid_storage",
+        "owner_share": 0.227
+      }
+    ]
+  }
+]

@@ -1,0 +1,20 @@
+input:
+  format: csv_posts
+  posts: ../datasets/swiss/swiss.csv
+
+name: swiss
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 30
+  nr_topics: auto
+  repro_mode: fast
+  label_model: gpt-6-luna
+
+network:
+  # 69k posts; skip the O(N) TTN projection on this one
+  type: multilayer_repost
+  project_ttn: false
+
+cache_dir: ../cache/swiss
+output_dir: ../out/swiss

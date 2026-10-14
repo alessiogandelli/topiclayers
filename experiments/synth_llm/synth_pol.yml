@@ -1,0 +1,24 @@
+input:
+  format: twitter_jsonl
+  posts: synth_pol.jsonl
+
+name: synth_pol
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 30
+  # nr_topics: auto collapses the fine-grained climate topics (see TUNING_NOTES.md)
+  nr_topics: null
+  random_state: 42
+  repro_mode: strict
+  label_model: gpt-6-luna
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  # retweet + per-topic multilayer (what netpol needs); TTN projection skipped (O(N))
+  type: multilayer_repost
+  project_ttn: false
+
+# paths chosen so experiments/scripts/run_netpol.py synth_pol works unchanged
+cache_dir: ../cache/synth_pol
+output_dir: out/synth_pol

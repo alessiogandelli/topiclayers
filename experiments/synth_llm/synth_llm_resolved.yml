@@ -1,0 +1,23 @@
+input:
+  format: twitter_jsonl
+  posts: synth_llm.jsonl
+
+name: synth_llm_resolved
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 30
+  # nr_topics: auto collapsed 11 topics into 1 (see SYNTH_LLM_REPORT.md);
+  # null keeps HDBSCAN's natural granularity (~29 clusters here).
+  nr_topics: null
+  random_state: 42
+  repro_mode: strict
+  label_model: gpt-6-luna
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  type: all
+  project_ttn: true
+
+cache_dir: cache
+output_dir: out_resolved

@@ -1,0 +1,22 @@
+input:
+  format: twitter_jsonl
+  posts: synth_pol.jsonl
+
+name: synth_pol_coarse
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 30
+  # coarse granularity so each per-topic retweet layer is big enough for netpol
+  nr_topics: 12
+  random_state: 42
+  repro_mode: strict
+  label_model: gpt-6-luna
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  type: multilayer_repost
+  project_ttn: false
+
+cache_dir: ../cache/synth_pol_coarse
+output_dir: out/synth_pol_coarse

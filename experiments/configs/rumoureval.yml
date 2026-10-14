@@ -1,0 +1,19 @@
+input:
+  format: csv_posts
+  posts: ../datasets/rumoureval/rumoureval.csv
+
+name: rumoureval
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 15
+  nr_topics: auto
+  repro_mode: fast
+  label_model: gpt-6-luna
+
+network:
+  type: all
+  project_ttn: true
+
+cache_dir: ../cache/rumoureval
+output_dir: ../out/rumoureval

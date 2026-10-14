@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Repository layout tidy-up. The research corpora and write-ups moved from `test_data/` to a structured `experiments/` folder (`datasets/`, `configs/`, `scripts/`, `reports/`, `outputs/`, plus the self-contained `synth_llm/`). Only the heavy corpora, caches and generated outputs stay gitignored; configs, scripts and reports are tracked.
+- `src/topiclayers/examples/` is now the single canonical examples source (what `topiclayers init` ships); the duplicate top-level `examples/` folder was removed and the test fixtures point at the packaged copy.
+- Untracked previously committed generated artifacts under `data/` (test networks, plots, toy cache) so the `data/` ignore rule actually applies. The files remain on disk.
+
+## [0.3.1] — 2026-10-13
+
+### Fixed
+- `.env` files are now actually loaded. `python-dotenv` was a dependency and the docs told users to put `OPENAI_API_KEY` / `QDRANT_URL` / `LABEL_API_BASE` in `.env`, but `load_dotenv()` was never called, so those values were silently ignored. It is now loaded once at package import with `override=False` (real environment variables win).
+- `topiclayers.__version__` is now read from the installed package metadata instead of a hardcoded string that had gone stale (`0.2.1`), so `run_manifest.json` reports the real version.
+- Topic modeling no longer silently collapses every document to the outlier topic (`-1`) on ordinary corpora. With the default `nr_topics="auto"`, BERTopic re-fits the `CountVectorizer` on one document per topic during topic reduction; the library's `min_df`/`max_df` heuristic could then raise `max_df corresponds to < documents than min_df`. The vectorizer now uses BERTopic's safe defaults (`min_df=1, max_df=1.0`).
+- Empty input no longer crashes with `KeyError: 'referenced_type'` / `'topic'`; the suite now handles an empty dataset and produces an empty run cleanly.
+- The CSV/Parquet adapters no longer turn empty text cells into the literal string `"nan"` (they become empty strings, matching the JSONL adapter).
+- **Large numeric ids are preserved by the CSV/Parquet adapters.** Pandas inferred `target_post_id` as float when the column mixed big integer ids with blanks, turning `1622232152543821824` into `1.6222201547708006e+18`; every reference then failed to resolve and multilayer networks came out empty (nodes but zero edges). Ids are now read as strings. JSONL was unaffected, which is why the COP22 pipeline worked but CSV/Parquet datasets did not.
+
 ## [0.3.0] — 2026-08-29
 
 ### Added

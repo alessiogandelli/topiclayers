@@ -17,6 +17,13 @@ class InputConfig:
 @dataclass
 class TopicModelConfig:
     embedder: str = "all-MiniLM-L6-v2"
+    # Model-specific input treatment. Empty/None = derive from the embedder name
+    # (E5 -> "query: " prefix, Qwen3 -> instruction, others -> plain text;
+    # normalisation on for all, since clustering uses cosine/UMAP).
+    embedder_prompt: str = ""
+    embedder_normalize: Optional[bool] = None
+    # "" = auto (MPS/CUDA if available, else CPU)
+    embedder_device: str = ""
     min_topic_size: int = 50
     nr_topics: str = "auto"
     random_state: int = 42

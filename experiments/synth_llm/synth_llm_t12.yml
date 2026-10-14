@@ -1,0 +1,21 @@
+input:
+  format: twitter_jsonl
+  posts: synth_llm.jsonl
+
+name: synth_llm_t12
+
+topic_model:
+  embedder: all-MiniLM-L6-v2
+  min_topic_size: 10
+  # force ~the plausible number of topics; shows the confusion at a fixed k
+  nr_topics: 12
+  random_state: 42
+  repro_mode: strict
+  label_model: ''
+  label_context: social media posts discussing climate change policy, energy and environmental politics
+
+network:
+  type: retweet
+
+cache_dir: cache
+output_dir: out_t12

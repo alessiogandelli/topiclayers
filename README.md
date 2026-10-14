@@ -114,6 +114,31 @@ with `curl http://localhost:8888/v1/models`.
 Labeling is non-fatal: if the model server is unreachable, topics keep their
 keyword labels and everything else proceeds normally.
 
+## Choosing an embedder
+
+`embedder` is any SentenceTransformer model (or an OpenAI `text-embedding-*`
+model). The pipeline applies the **model-specific input treatment automatically**
+— E5 gets its `"query: "` prefix, Qwen3-Embedding its instruction format, the
+MiniLM/MPNet families plain text — and L2-normalises, because clustering uses
+cosine/UMAP. Override with `embedder_prompt` / `embedder_normalize`:
+
+```yaml
+topic_model:
+  embedder: Qwen/Qwen3-Embedding-0.6B   # strong multilingual; ~1.8x the ARI of MiniLM on noisy data
+  # embedder: all-mpnet-base-v2         # English-only fallback
+  # embedder: paraphrase-multilingual-MiniLM-L12-v2   # lightweight multilingual
+  # embedder_prompt: ""                 # override the auto prefix
+  # embedder_normalize: true
+  # embedder_device: ""                 # "" = auto (MPS/CUDA if available)
+  umap_n_neighbors: 15
+  umap_n_components: 10                 # 10 worked better than 5 for Qwen3
+```
+
+Rule of thumb (from the benchmark in `experiments/`): the **embedder matters more
+than any clustering knob**. `all-MiniLM-L6-v2` (the default) is fine for English
+toy data but collapses multilingual corpora; use a multilingual model
+(Qwen3-Embedding, multilingual MiniLM/mpnet) for real, mixed-language data.
+
 ## Input formats
 
 | Format | Extension | Description |

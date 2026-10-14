@@ -47,10 +47,14 @@ def _row_to_post(row, extra_cols: list[str]) -> Post:
         key = col.removeprefix("extra_")
         extra[key] = val
 
+    raw_text = row.get("text", "")
+    if isinstance(raw_text, float) and pd.isna(raw_text):
+        raw_text = ""
+
     return Post(
         post_id=str(row["post_id"]),
         user_id=str(row["user_id"]),
-        text=str(row.get("text", "")),
+        text=str(raw_text),
         created_at=row.get("created_at") if not (isinstance(row.get("created_at"), float) and pd.isna(row.get("created_at"))) else None,
         lang=row.get("lang") if not (isinstance(row.get("lang"), float) and pd.isna(row.get("lang"))) else None,
         interaction_type=_parse_interaction(row.get("interaction_type")),
@@ -60,8 +64,21 @@ def _row_to_post(row, extra_cols: list[str]) -> Post:
     )
 
 
+def _strings_only(df: pd.DataFrame) -> pd.DataFrame:
+    """Force every column to string dtype, mapping missing values to ''.
+
+    Ids must never be numeric: pandas otherwise infers ``target_post_id`` as
+    float when the column mixes large integer ids with blanks, silently
+    turning ``1622232152543821824`` into ``1.6222201547708006e+18`` and
+    breaking every reference (empty networks).
+    """
+    for col in df.columns:
+        df[col] = df[col].astype("string").fillna("")
+    return df
+
+
 def load_csv(path: Path) -> List[Post]:
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype=str, keep_default_na=False)
     required = {"post_id", "user_id", "text"}
     missing = required - set(df.columns)
     if missing:
@@ -75,7 +92,7 @@ def load_csv(path: Path) -> List[Post]:
 
 
 def load_parquet(path: Path) -> List[Post]:
-    df = pd.read_parquet(path)
+    df = _strings_only(pd.read_parquet(path))
     required = {"post_id", "user_id", "text"}
     missing = required - set(df.columns)
     if missing:

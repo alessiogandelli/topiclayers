@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from topiclayers.support.cache import cache_key
+from topiclayers.support.embedders import pick_device, resolve_profile
 from topiclayers.status import log_via
 
 
@@ -28,7 +29,9 @@ class TopicModeler:
         self.name = name
         self.path_cache = Path(path_cache)
 
-        self.tm_path = self.path_cache / "tm" / self.embedder_name
+        # HF model ids contain "/" (e.g. "Qwen/Qwen3-Embedding-0.6B"); flatten
+        # so the cache layout stays two levels deep and glob patterns work.
+        self.tm_path = self.path_cache / "tm" / self.embedder_name.replace("/", "__")
         self.df_labeled_path = self.tm_path / f"tweets_{self.name}_labeled.pkl"
         self.model_path = self.tm_path / f"model_{self.name}"
         self.embeddings_path = self.tm_path / f"embeddings_{self.name}.pkl"
@@ -51,12 +54,20 @@ class TopicModeler:
         # "pca" (seeded) is deterministic AND ~20x faster than "spectral";
         # pass umap_init="spectral" explicitly to restore the old behaviour
         umap_init: str = "pca",
+        # UMAP neighbourhood size / target dimension (were ignored before)
+        umap_n_neighbors: int = 15,
+        umap_n_components: int = 5,
+        # embedder input treatment (empty/None = derive from the model name)
+        embedder_prompt: str = "",
+        embedder_normalize: Optional[bool] = None,
+        embedder_device: str = "",
     ) -> pd.DataFrame:
         from topiclayers.support.repro import set_global_seed
 
         set_global_seed(random_state)
 
         self.tm_path.mkdir(parents=True, exist_ok=True)
+        profile = resolve_profile(self.embedder_name, embedder_prompt, embedder_normalize)
 
         manifest_path = self.tm_path / f"manifest_{self.name}.json"
         docs_hash = _docs_hash(self.df["text"].tolist())
@@ -65,6 +76,8 @@ class TopicModeler:
             str(nr_topics), str(random_state),
             f"exact_prob={exact_probabilities}", f"repro={repro_mode}",
             f"umap_init={umap_init}",
+            f"umap_nn={umap_n_neighbors}", f"umap_nc={umap_n_components}",
+            f"embed={profile.key()}",
         )
 
         if self.df_labeled_path.exists() and self.model_path.exists():
@@ -91,7 +104,7 @@ class TopicModeler:
 
         if self.embeddings_path.exists():
             embed_manifest = self.tm_path / f"embeddings_manifest_{self.name}.json"
-            embed_key = cache_key(_docs_hash(docs), self.embedder_name)
+            embed_key = cache_key(_docs_hash(docs), self.embedder_name, profile.key())
             use_cached = False
             if embed_manifest.exists():
                 try:
@@ -106,15 +119,17 @@ class TopicModeler:
                 with open(self.embeddings_path, "rb") as f:
                     self.embeddings = pickle.load(f)
             else:
-                self._get_embeddings(docs, reporter)
+                self._get_embeddings(docs, reporter, profile, embedder_device)
         else:
-            self._get_embeddings(docs, reporter)
+            self._get_embeddings(docs, reporter, profile, embedder_device)
 
         self._use_BERTopic(
             docs, nr_topics, min_topic_size, random_state,
             umap_model, hdbscan_model, reporter,
             exact_probabilities=exact_probabilities, repro_mode=repro_mode,
             umap_init=umap_init,
+            umap_n_neighbors=umap_n_neighbors,
+            umap_n_components=umap_n_components,
         )
 
         self._save_qdrant(docs, reporter)
@@ -147,11 +162,15 @@ class TopicModeler:
         self.docs = docs
         return docs
 
-    def _get_embeddings(self, docs: list[str], reporter=None) -> None:
+    def _get_embeddings(self, docs: list[str], reporter=None, profile=None,
+                        device: str = "") -> None:
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         if reporter is not None:
             reporter.stage("embed", total=len(docs))
+
+        if profile is None:
+            profile = resolve_profile(self.embedder_name)
 
         if self.embedder_name.startswith("text-embedding"):
             api_key = os.getenv("OPENAI_API_KEY")
@@ -179,13 +198,22 @@ class TopicModeler:
         else:
             from sentence_transformers import SentenceTransformer
 
-            model = SentenceTransformer(self.embedder_name)
             batch_size = 256
+            model = SentenceTransformer(
+                self.embedder_name,
+                device=pick_device(device),
+                trust_remote_code=profile.trust_remote_code or None,
+            )
             all_embeddings = []
 
             for i in range(0, len(docs), batch_size):
                 batch = docs[i:i + batch_size]
-                batch_emb = model.encode(batch, show_progress_bar=False)
+                batch_emb = model.encode(
+                    batch,
+                    show_progress_bar=False,
+                    normalize_embeddings=profile.normalize,
+                    prompt=profile.prompt or None,
+                )
                 all_embeddings.append(batch_emb)
                 if reporter is not None:
                     reporter.update(min(i + batch_size, len(docs)))
@@ -198,7 +226,7 @@ class TopicModeler:
             pickle.dump(self.embeddings, f)
 
         embed_manifest = self.tm_path / f"embeddings_manifest_{self.name}.json"
-        embed_key = cache_key(_docs_hash(docs), self.embedder_name)
+        embed_key = cache_key(_docs_hash(docs), self.embedder_name, profile.key())
         with open(embed_manifest, "w") as f:
             json.dump({"key": embed_key, "embedder": self.embedder_name}, f)
 
@@ -214,6 +242,8 @@ class TopicModeler:
         exact_probabilities: bool = False,
         repro_mode: str = "strict",
         umap_init: str = "pca",
+        umap_n_neighbors: int = 15,
+        umap_n_components: int = 5,
     ) -> None:
         # mark the stage before importing: torch/umap/bertopic imports take a
         # while and would otherwise be billed to the previous stage
@@ -244,19 +274,18 @@ class TopicModeler:
                 "Check the 'text' column of your input."
             )
 
-        if len(docs) < 10:
-            vectorizer_model = CountVectorizer(stop_words="english", min_df=1, max_df=1.0)
-        else:
-            min_df_value = max(1, min(5, len(docs) // 100))
-            vectorizer_model = CountVectorizer(
-                stop_words="english", min_df=min_df_value, max_df=0.95
-            )
+        # Keep the vectorizer robust: with nr_topics="auto" BERTopic re-fits
+        # this vectorizer on *one document per topic* during topic reduction,
+        # so a min_df/max_df tuned for the full corpus can raise
+        # "max_df corresponds to < documents than min_df" and silently collapse
+        # every document to the outlier topic. BERTopic defaults are safe here.
+        vectorizer_model = CountVectorizer(stop_words="english", min_df=1, max_df=1.0)
         ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
 
         fast = repro_mode == "fast"
         if umap_model is None:
-            n_neighbors = min(15, max(2, len(docs) - 1))
-            n_components = min(5, len(docs) - 1)
+            n_neighbors = min(umap_n_neighbors, max(2, len(docs) - 1))
+            n_components = min(umap_n_components, len(docs) - 1)
             if n_components + 1 >= len(docs):
                 n_components = max(1, len(docs) - 3)
             umap_params = {

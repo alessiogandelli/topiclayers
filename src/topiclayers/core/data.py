@@ -161,8 +161,28 @@ class Dataset:
                 }
         return users
 
+    _TWEET_COLUMNS = [
+        "author", "author_name", "text", "date", "lang", "conversation_id",
+        "referenced_type", "referenced_id", "mentions_name", "mentions_id",
+        "attachments", "cop",
+    ]
+
     def _create_dataframes(self) -> None:
         df = self.df_tweets
+        if df is None or len(df) == 0 or "referenced_type" not in df.columns:
+            # No posts (empty input) leaves df_tweets without any columns;
+            # create empty, correctly-typed frames so downstream stages
+            # (network building, manifest) don't crash with a KeyError.
+            empty = pd.DataFrame({c: pd.Series(dtype="object") for c in self._TWEET_COLUMNS})
+            empty.index.name = "id"
+            if df is None or len(df) == 0:
+                self.df_tweets = empty
+            self.df_original = empty.copy()
+            self.df_retweets = empty.copy()
+            self.df_quotes = empty.copy()
+            self.df_reply = empty.copy()
+            return
+
         self.df_original = df[df["referenced_type"].isna()].copy()
         self.df_retweets = df[df["referenced_type"] == "retweeted"].copy()
         self.df_quotes = df[df["referenced_type"] == "quoted"].copy()
@@ -171,6 +191,15 @@ class Dataset:
     def update_df(self, df_labeled: pd.DataFrame, reporter=None) -> pd.DataFrame:
         if "id" in df_labeled.columns and df_labeled.index.name != "id":
             df_labeled = df_labeled.set_index("id")
+
+        if len(df_labeled) == 0 and len(self.df_retweets) == 0:
+            # Empty dataset (no posts at all): return an empty labeled frame
+            # with the expected column instead of crashing on .notna().
+            out = df_labeled.copy()
+            if "topic" not in out.columns:
+                out["topic"] = pd.Series(dtype="object")
+            self.df_retweets_labeled = out
+            return out
 
         df_retweets_copy = self.df_retweets.copy()
         df_retweets_copy["topic"] = df_retweets_copy["referenced_id"]

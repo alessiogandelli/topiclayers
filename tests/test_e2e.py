@@ -17,8 +17,8 @@ def test_csv_toy_e2e():
         d = Path(d)
         import topiclayers.adapters.csv  # noqa: F401
 
-        fmt, loader = resolve_adapter(Path("examples/generic/posts.csv"))
-        posts = loader(Path("examples/generic/posts.csv"))
+        fmt, loader = resolve_adapter(Path("src/topiclayers/examples/generic/posts.csv"))
+        posts = loader(Path("src/topiclayers/examples/generic/posts.csv"))
         assert len(posts) == 7
 
         ds = Dataset(posts, n_cop="e2e_test")
@@ -67,7 +67,7 @@ def test_pipeline_writes_run_status():
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
         cfg = RunConfig(
-            input=InputConfig(format="csv_posts", posts=Path("examples/generic/posts.csv")),
+            input=InputConfig(format="csv_posts", posts=Path("src/topiclayers/examples/generic/posts.csv")),
             name="status_e2e",
             topic_model=TopicModelConfig(
                 embedder="all-MiniLM-L6-v2", min_topic_size=2, nr_topics="auto", random_state=42

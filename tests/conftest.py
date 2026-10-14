@@ -10,12 +10,12 @@ import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = THIS_DIR.parent
-EXAMPLES_DIR = REPO_ROOT / "examples"
+EXAMPLES_DIR = REPO_ROOT / "src" / "topiclayers" / "examples"
 
 
 @pytest.fixture
 def toy_df() -> pd.DataFrame:
-    """7-row fixture matching legacy test/test.py and examples/generic/posts.csv."""
+    """7-row fixture matching legacy test/test.py and src/topiclayers/examples/generic/posts.csv."""
     df = pd.DataFrame(
         {
             "id": ["t1", "t2", "t3", "t4", "t5", "t6", "t7"],
